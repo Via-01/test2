@@ -1,63 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>LifeLink Donor Management</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        form { margin-bottom: 20px; }
-        input, button { padding: 10px; margin-right: 10px; }
-        ul { list-style-type: none; padding: 0; }
-        li { padding: 10px; border-bottom: 1px solid #ccc; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1, h2 { color: #A00; }
+        .container { max-width: 800px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .eligible { color: green; font-weight: bold; }
+        .ineligible { color: orange; }
     </style>
 </head>
 <body>
-    <h1>Add a New Donor</h1>
-    <form id="donorForm">
-        <input type="text" id="name" placeholder="Name" required>
-        <input type="text" id="bloodType" placeholder="Blood Type" required>
-        <button type="submit">Add Donor</button>
-    </form>
+    <div class="container">
+        <h1>LifeLink Blood Management System</h1>
+        <hr>
 
-    <h2>Our Donors</h2>
-    <ul id="donorsList"></ul>
+        <h2>📊 Our Donors</h2>
+        
+        {% if donors %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>User ID</th>
+                        <th>Email</th>
+                        <th>Last Donation</th>
+                        <th>Eligibility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for donor in donors %}
+                    <tr>
+                        <td>{{ donor.username }}</td>
+                        <td>{{ donor.userId }}</td>
+                        <td>{{ donor.email }}</td>
+                        <td>{{ donor.lastDonation }}</td>
+                        <td class="{{ 'eligible' if donor.isEligible else 'ineligible' }}">
+                            {{ 'Eligible' if donor.isEligible else 'Ineligible' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No donor data found in the system.</p>
+        {% endif %}
 
-    <script>
-        // JavaScript to connect the frontend to the backend
-        async function fetchDonors() {
-            const response = await fetch('http://127.0.0.1:8000/donors');
-            const donors = await response.json();
-            const donorsList = document.getElementById('donorsList');
-            donorsList.innerHTML = ''; // Clear the list
-            donors.forEach(donor => {
-                const li = document.createElement('li');
-                li.textContent = `Name: ${donor.name}, Blood Type: ${donor.blood_type}`;
-                donorsList.appendChild(li);
-            });
-        }
-
-        document.getElementById('donorForm').addEventListener('submit', async (event) => {
-            event.preventDefault(); // Stop the form from refreshing the page
-            const name = document.getElementById('name').value;
-            const bloodType = document.getElementById('bloodType').value;
-            
-            const response = await fetch('http://127.0.0.1:8000/donors', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ name, blood_type: bloodType }),
-            });
-            
-            if (response.ok) {
-                document.getElementById('donorForm').reset(); // Clear the form
-                fetchDonors(); // Refresh the list
-            } else {
-                console.error('Failed to add donor');
-            }
-        });
-
-        // Fetch donors when the page first loads
-        fetchDonors();
-    </script>
+        <hr>
+        <h2>➕ Add New Donor</h2>
+        <form method="POST" action="/donor/add">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="text" name="phone" placeholder="Phone" required>
+            <button type="submit">Register Donor</button>
+        </form>
+    </div>
 </body>
 </html>

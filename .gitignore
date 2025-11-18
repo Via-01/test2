@@ -1,0 +1,19 @@
+# Virtual Environment
+venv/
+.venv/
+
+# Database Files
+*.db
+*.sqlite
+lifelink.db
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# IDE/Editor files
+.vscode/
+
+# Application Specific Files
+config.py
+secret_key.txt
