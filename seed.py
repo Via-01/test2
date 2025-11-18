@@ -4,9 +4,10 @@ from databases import SessionLocal, init_db
 from models import (
     Address, BloodType, User, Donor, HospitalAdmin, BloodBankStaff, 
     BloodBankUnit, Inventory, BloodComponent, LogAction, AuditLog, 
-    ContactInfo, RequestStatus, DonationStatus, Donation, BloodRequest,  HospitalUnit
+    ContactInfo, RequestStatus, DonationStatus, Donation, BloodRequest, HospitalUnit
 )
 import random
+from uuid import uuid4
 
 def populate_database():
     """Populates the database with initial sample data."""
@@ -46,11 +47,20 @@ def populate_database():
         platelets = BloodComponent(componentId="BC002", name="Platelets", storageConditions="20-24°C, agitated")
         db.add_all([packed_red_cells, platelets])
 
-        inventory_unit = Inventory(inventoryId="I001", unitsAvailable=150, lastUpdated=date.today(), minOrderAmt=10, maxStorage=500.0, unitId="BBU001")
+        # Inventory arguments match models.py (blood_type and component)
+        inventory_unit = Inventory(
+            inventoryId="I001", 
+            unitsAvailable=150, 
+            lastUpdated=date.today(), 
+            minOrderAmt=10, 
+            maxStorage=500.0, 
+            unitId="BBU001",
+            blood_type=BloodType.O_NEGATIVE, # Matches Inventory model column
+            component="WHOLE_BLOOD"          # Matches Inventory model column
+        )
         bank_unit = BloodBankUnit(unitId="BBU001", name="Central Blood Storage", contactNumber="555-UNIT")
         db.add_all([inventory_unit, bank_unit])
 
-        # Manually link inventory to address via foreign key
         bank_address.inventory_fk = "I001" 
 
         # --- 4. Create Hospital Unit ---
@@ -67,13 +77,15 @@ def populate_database():
             status=DonationStatus.COMPLETE
         )
 
+        # BloodRequest arguments match models.py (requestDate and isUrgent)
         request = BloodRequest(
             requestId="R001",
             hospitalId="HU001",
+            requestedId="P-999", 
+            requestDate=date.today(), # Matches BloodRequest model column
             quantity=20,
-            date=date.today(),
             blood_type=BloodType.A_NEGATIVE,
-            emergency=True,
+            isUrgent=True, # Matches BloodRequest model column
             status=RequestStatus.PENDING
         )
         db.add_all([donation, request])

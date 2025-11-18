@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> 
+</head>
+<body>
+    <div class="container">
+        <h1>Pending Blood Requests</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if request.args.get('success') %}
+            <div style="color: green; font-weight: bold; border: 1px solid green; padding: 10px; margin-bottom: 10px;">SUCCESS: {{ request.args.get('success') }}</div>
+        {% elif request.args.get('error') %}
+            <div style="color: red; font-weight: bold; border: 1px solid red; padding: 10px; margin-bottom: 10px;">ERROR: {{ request.args.get('error') }}</div>
+        {% endif %}
+
+        {% if requests %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Hospital ID</th>
+                        <th>Blood Type</th>
+                        <th>Quantity (units)</th>
+                        <th>Date</th>
+                        <th>Urgent</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>{{ req.id }}</td>
+                        <td>{{ req.hospitalId }}</td>
+                        <td>{{ req.bloodType }}</td>
+                        <td>{{ req.quantity }}</td>
+                        <td>{{ req.date }}</td>
+                        <td>{{ req.isUrgent }}</td>
+                        <td>
+                            <a href="{{ url_for('staff.handle_fulfill_request', id=req.id) }}" 
+                               style="background-color: green; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; margin-right: 5px;">
+                                Fulfill
+                            </a>
+                            <a href="{{ url_for('staff.match_donor_for_request', request_id=req.id) }}" 
+                               style="background-color: darkred; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px;">
+                                Find Donor
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No pending blood requests at this time.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

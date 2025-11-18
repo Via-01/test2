@@ -1,24 +1,26 @@
 # app.py
 from flask import Flask
-# IMPORTANT: Use the correct plural file name 'databases' for the utility file
 from databases import init_db 
-from routes import main_bp 
+# IMPORT ALL BLUEPRINTS
+from main_routes import main_bp 
+from donor_routes import donor_bp
+from staff_routes import staff_bp
 
 # Create the Flask application instance
 app = Flask(__name__)
-# The SECRET_KEY is necessary for Flask to handle sessions securely
 app.config['SECRET_KEY'] = 'your_super_secret_lifelink_key_123' 
 
-# Register the Blueprint to link the routes in routes.py to the application
+# Register all Blueprints
 app.register_blueprint(main_bp)
+# Register donor_bp and set URL prefix for clarity
+app.register_blueprint(donor_bp, url_prefix='/donor')
+# Register staff_bp and set URL prefix for clarity (already set in staff_routes.py)
+app.register_blueprint(staff_bp)
 
 @app.before_request
 def ensure_database_exists():
-    """Initializes the database before the very first request."""
-    # This ensures the tables are created if the database file is new or empty.
     with app.app_context():
         init_db()
 
 if __name__ == '__main__':
-    # Running the application
     app.run(debug=True)

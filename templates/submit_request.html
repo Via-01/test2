@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
+        .container { max-width: 600px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2 { color: #A00; }
+        form div { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="number"], select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            background-color: #007bff; 
+            color: white; 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer;
+        }
+        button:hover { background-color: #0056b3; }
+        .error { color: red; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🩸 Submit New Blood Request</h2>
+        <a href="{{ url_for('main.home_dashboard') }}">← Back to Dashboard</a>
+        <hr>
+
+        {% if error %}
+        <p class="error">❌ {{ error }}</p>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('staff.submit_blood_request') }}">
+            
+            <div>
+                <label for="hospital_id">Hospital Unit ID (e.g., HU001):</label>
+                <input type="text" id="hospital_id" name="hospital_id" value="HU001" required>
+            </div>
+            
+            <div>
+                <label for="requested_id">Patient/Request Identifier:</label>
+                <input type="text" id="requested_id" name="requested_id" placeholder="e.g., P-456" required>
+            </div>
+
+            <div>
+                <label for="blood_type">Requested Blood Type:</label>
+                <select id="blood_type" name="blood_type" required>
+                    <option value="O_POSITIVE">O Positive</option>
+                    <option value="O_NEGATIVE">O Negative</option>
+                    <option value="A_POSITIVE">A Positive</option>
+                    <option value="A_NEGATIVE">A Negative</option>
+                    <option value="B_POSITIVE">B Positive</option>
+                    <option value="B_NEGATIVE">B Negative</option>
+                    <option value="AB_POSITIVE">AB Positive</option>
+                    <option value="AB_NEGATIVE">AB Negative</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="quantity">Quantity (Units):</label>
+                <input type="number" id="quantity" name="quantity" min="1" required>
+            </div>
+
+            <div>
+                <label for="is_urgent">Urgency:</label>
+                <select id="is_urgent" name="is_urgent" required>
+                    <option value="False">Standard</option>
+                    <option value="True">URGENT</option>
+                </select>
+            </div>
+
+            <button type="submit">Submit Request</button>
+        </form>
+    </div>
+</body>
+</html>
