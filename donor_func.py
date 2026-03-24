@@ -1,61 +1,51 @@
 # donor_func.py
 from datetime import date, timedelta
 from models import Donor
-# NOTE: Ensure databases.py exists and exports SessionLocal
-from databases import SessionLocal 
+from sqlalchemy.orm import Session
 
-# --- Configuration for Function #3 ---
-DONATION_COOLDOWN_DAYS = 90
+# --- 1. Eligibility Check (Function #3) ---
 
 def check_donor_eligibility(donor: Donor) -> bool:
     """
-    Function #3: Checks if a donor is eligible based on ALL criteria.
-    
-    A donor must pass both the 90-day cooldown AND the static health flag.
+    Function #3: Checks if a donor is eligible based on the last donation date and health status.
     """
-    # 1. Check Cooldown Period
-    if donor.lastDonationDate is None:
-        cooldown_ok = True
-    else:
-        eligible_date = donor.lastDonationDate + timedelta(days=DONATION_COOLDOWN_DAYS)
-        cooldown_ok = date.today() >= eligible_date
+    # 1. Check if the eligibility flag is False (due to a failed screening or recent donation)
+    if not donor.isEligible:
+        return False
         
-    # 2. Check Static Eligibility Flag (Health status controlled by Function #2)
-    return cooldown_ok and donor.isEligible 
+    # 2. Check cooldown period (assuming a 56-day cooldown)
+    if donor.lastDonationDate:
+        cooldown_period = timedelta(days=56)
+        next_eligible_date = donor.lastDonationDate + cooldown_period
+        
+        if date.today() < next_eligible_date:
+            return False # Still in cooldown
+            
+    return True # Passed health flag check and cooldown check
 
-def update_donor_eligibility_status(db, donor_id: str):
-    """
-    Recalculates and updates the final isEligible status based on ALL criteria.
-    NOTE: This is not currently used in the main routes but is available for reuse.
-    """
-    donor = db.query(Donor).filter(Donor.userId == donor_id).first()
-    if donor:
-        new_status = check_donor_eligibility(donor)
-        if donor.isEligible != new_status:
-            donor.isEligible = new_status
-            db.commit()
-            return True
-    return False
+# --- 2. Health Metrics Update (Function #2) ---
 
-def update_health_metrics(db, donor_id: str, low_hgb: bool = False) -> bool:
+def update_health_metrics(db: Session, donor_id_input: str, failed_screening: bool) -> tuple[bool, str]:
     """
-    Function #2: Updates health data and sets the static isEligible flag based on screening results.
+    Function #2: Updates a donor's eligibility status based on a health screening result.
+    If the screening failed, the donor is immediately marked as ineligible (isEligible=False).
     
-    Simulates a health screening failure (e.g., low hemoglobin) and sets the static 
-    donor.isEligible flag accordingly.
+    Returns a tuple: (success: bool, message: str)
     """
-    donor = db.query(Donor).filter(Donor.userId == donor_id).first()
-    if donor:
-        if low_hgb:
-            # Failed health check (e.g., low Hemoglobin)
-            donor.isEligible = False
-            print(f"Donor {donor_id} failed screening (Low Hgb). Eligibility set to False.")
-        else:
-            # Passed health check
-            # This is only True if the cooldown period is also passed, but we set the static flag here.
-            donor.isEligible = True 
-            print(f"Donor {donor_id} passed screening. Eligibility flag set to True.")
-
-        db.commit()
-        return True
-    return False
+    # Use the same partial matching logic as record_donation
+    donor = db.query(Donor).filter(Donor.userId.startswith(donor_id_input)).first()
+    
+    if not donor:
+        return False, f"Donor ID {donor_id_input} not found."
+    
+    if failed_screening:
+        # Override cooldown—set eligibility to False due to health
+        donor.isEligible = False
+        message = f"Health screening failed. Donor {donor.username} (ID: {donor_id_input}) marked INELIGIBLE."
+    else:
+        # If the screening passed, re-calculate eligibility based on cooldown and update the flag
+        donor.isEligible = check_donor_eligibility(donor)
+        message = f"Health screening passed for Donor {donor.username} (ID: {donor_id_input}). Eligibility updated based on cooldown."
+    
+    db.commit()
+    return True, message

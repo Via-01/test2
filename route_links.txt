@@ -1,0 +1,22 @@
+link_map = {
+    # Main Dashboard
+    "Home": "main.home",
+
+    # Donor Management
+    "Register New Donor": "donor.register_donor",
+    "View All Donors List": "donor.view_donors",
+
+    # Blood Request Management (placeholders if actual endpoints exist, replace later)
+    "Create New Request": "report.reports_menu",
+    "View & Fulfill Requests": "report.blood_bank_report",
+    "View All Request History": "report.hospital_report",
+
+    # Inventory & Donation
+    "View Current Stock": "inventory.view_inventory_stock",
+    "Transfer Units": "inventory.transfer_units_form",
+
+    # Reporting & Analytics
+    "Go to Reports Menu": "report.reports_menu",
+    "Blood Bank Report": "report.blood_bank_report",
+    "Hospital Report": "report.hospital_report"
+}

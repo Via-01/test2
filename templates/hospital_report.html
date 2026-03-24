@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
+        .container { max-width: 900px; margin: auto; padding: 30px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; text-align: center; margin-bottom: 10px; }
+        h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; }
+        .metadata { text-align: center; color: #666; margin-bottom: 30px; font-style: italic; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; color: #333; text-align: center; }
+        td { text-align: center; }
+        
+        .fulfillment-rate {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 1.4em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ title }}</h1>
+        <div class="metadata">
+            Report Date: {{ data.report_date }} | Total Requests Analyzed: {{ data.total_requests }}
+        </div>
+        
+        <p><a href="{{ url_for('report.reports_menu') }}">&larr; Back to Reports Menu</a></p>
+
+        <!-- Fulfillment Rate -->
+        <h2>Request Fulfillment Success</h2>
+        <div class="fulfillment-rate">
+            Overall Fulfillment Rate: {{ data.fulfillment_rate }}
+        </div>
+
+        <!-- Requests by Status -->
+        <h2>Request Status Breakdown (All Time)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.requests_by_status %}
+                <tr>
+                    <td><strong>{{ item.status }}</strong></td>
+                    <td>{{ item.count }}</td>
+                </tr>
+                {% endfor %}
+                {% if not data.requests_by_status %}
+                <tr><td colspan="2">No request records found.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Requests by Urgency -->
+        <h2>Requests by Urgency Level (All Time)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Urgency</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.requests_by_urgency %}
+                <tr>
+                    <td><strong>{{ item.type }}</strong></td>
+                    <td>{{ item.count }}</td>
+                </tr>
+                {% endfor %}
+                {% if not data.requests_by_urgency %}
+                <tr><td colspan="2">No request urgency data found.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+    </div>
+</body>
+</html>

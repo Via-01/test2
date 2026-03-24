@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
+        .container { max-width: 900px; margin: auto; padding: 30px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #A00; text-align: center; margin-bottom: 10px; }
+        h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; }
+        .metadata { text-align: center; color: #666; margin-bottom: 30px; font-style: italic; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; color: #333; text-align: center; }
+        td { text-align: center; }
+        .summary-box { background-color: #e6f7ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #cceeff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ title }}</h1>
+        <div class="metadata">
+            Report Date: {{ data.report_date }} | Donation Period: {{ data.period }}
+        </div>
+        
+        <p><a href="{{ url_for('report.reports_menu') }}">&larr; Back to Reports Menu</a></p>
+
+        <!-- Current Inventory Summary -->
+        <h2>Current Inventory Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Blood Type</th>
+                    <th>Total Units Available (mL)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.inventory_summary %}
+                <tr>
+                    <td><strong>{{ item.bloodType }}</strong></td>
+                    <td>{{ item.total_units }}</td>
+                </tr>
+                {% endfor %}
+                {% if not data.inventory_summary %}
+                <tr><td colspan="2">No current inventory records found.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Recent Donation Volume -->
+        <h2>Recent Donation Volume (Last 30 Days)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Blood Type</th>
+                    <th>Number of Successful Donations</th>
+                    <th>Total Quantity Donated (mL)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.donation_volume %}
+                <tr>
+                    <td><strong>{{ item.bloodType }}</strong></td>
+                    <td>{{ item.count }}</td>
+                    <td>{{ item.quantity }}</td>
+                </tr>
+                {% endfor %}
+                {% if not data.donation_volume %}
+                <tr><td colspan="3">No successful donations recorded in the last 30 days.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Donation Status Breakdown -->
+        <h2>Recent Donation Status Breakdown</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Count (Last 30 Days)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data.status_breakdown %}
+                <tr>
+                    <td>{{ item.status }}</td>
+                    <td>{{ item.count }}</td>
+                </tr>
+                {% endfor %}
+                {% if not data.status_breakdown %}
+                <tr><td colspan="2">No donation status records found in the last 30 days.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+    </div>
+</body>
+</html>

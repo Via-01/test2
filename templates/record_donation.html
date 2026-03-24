@@ -2,95 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Record New Donation</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        /* Minimal internal styling for clarity */
-        .container {
-            width: 50%;
-            margin: 50px auto;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        input[type="text"], input[type="date"], select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #dc3545;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-        }
-        .error {
-            color: red;
-            font-weight: bold;
-            border: 1px solid red;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
+        .container { max-width: 600px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2 { color: #A00; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        form div { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="date"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #A00; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #800; }
+        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Record New Blood Donation</h1>
-        
-        <p><a href="{{ url_for('main.home_dashboard') }}">&larr; Back to Dashboard</a></p>
+        <h2>Record New Blood Donation</h2>
+        <a href="{{ url_for('main.home_dashboard') }}">← Back to Dashboard</a>
+        <hr>
 
         {% if error %}
-            <div class="error">**Error:** {{ error }}</div>
-        {% elif request.args.get('success') %}
-            <div style="color: green; font-weight: bold; border: 1px solid green; padding: 10px; margin-bottom: 15px; border-radius: 4px;">
-                SUCCESS: {{ request.args.get('success') }}
-            </div>
+            <p class="message error">❌ **Error:** {{ error }}</p>
         {% endif %}
 
         <form method="POST" action="{{ url_for('staff.record_donation') }}">
-            
-            <label for="donor_id">Donor ID / User ID:</label>
-            <input type="text" id="donor_id" name="donor_id" placeholder="e.g., U001 or UA46ACC" required>
-            
-            <label for="date">Donation Date (yyyy-mm-dd):</label>
-            <input type="text" id="date" name="date" placeholder="yyyy-mm-dd" value="{{ '2025-11-18' }}" required>
-            
-            <label for="quantity">Quantity (mL):</label>
-            <input type="text" id="quantity" name="quantity" value="450" placeholder="e.g., 450" required>
-            
-            <label for="blood_type">Blood Type:</label>
-            <select id="blood_type" name="blood_type" required>
-                <option value="O_POSITIVE">O Positive (O+)</option>
-                <option value="O_NEGATIVE">O Negative (O-)</option>
-                <option value="A_POSITIVE">A Positive (A+)</option>
-                <option value="A_NEGATIVE">A Negative (A-)</option>
-                <option value="B_POSITIVE">B Positive (B+)</option>
-                <option value="B_NEGATIVE">B Negative (B-)</option>
-                <option value="AB_POSITIVE">AB Positive (AB+)</option>
-                <option value="AB_NEGATIVE">AB Negative (AB-)</option>
-            </select>
-            <br><br>
-
-            <label for="status">Donation Status:</label>
-            <select id="status" name="status" required>
-                <option value="COMPLETE">Complete</option>
-                <option value="PENDING">Pending (Initial Lab)</option>
-                <option value="FAILED">Failed (Screening/Testing)</option>
-            </select>
-            <br><br>
-            
-            <label for="unit_id">Blood Bank Unit ID:</label>
-            <input type="text" id="unit_id" name="unit_id" value="BBU001" placeholder="e.g., BBU001" required>
-
+            <div>
+                <label for="donor_id">Donor ID / User ID:</label>
+                <input type="text" id="donor_id" name="donor_id" placeholder="e.g., 35835678-91b4-419b-abd9-b72d69f41b8b" required>
+            </div>
+            <div>
+                <label for="date">Donation Date:</label>
+                <input type="date" id="date" name="date" value="{{ today }}" required>
+            </div>
+            <div>
+                <label for="quantity">Quantity (mL):</label>
+                <input type="text" id="quantity" name="quantity" value="450" required>
+            </div>
+            <div>
+                <label for="blood_type">Blood Type:</label>
+                <select id="blood_type" name="blood_type" required>
+                    <option value="O_POSITIVE">O Positive (O+)</option>
+                    <option value="O_NEGATIVE">O Negative (O-)</option>
+                    <option value="A_POSITIVE">A Positive (A+)</option>
+                    <option value="A_NEGATIVE">A Negative (A-)</option>
+                    <option value="B_POSITIVE">B Positive (B+)</option>
+                    <option value="B_NEGATIVE">B Negative (B-)</option>
+                    <option value="AB_POSITIVE">AB Positive (AB+)</option>
+                    <option value="AB_NEGATIVE">AB Negative (AB-)</option>
+                </select>
+            </div>
+            <div>
+                <label for="staff_id">Staff ID (Recorder):</label>
+                <input type="text" id="staff_id" name="staff_id" placeholder="e.g., U003" required>
+            </div>
             <button type="submit">Record Donation</button>
         </form>
     </div>

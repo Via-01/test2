@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
+        .container { max-width: 1200px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #A00; text-align: center; }
+        p { margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #f2f2f2; color: #333; }
+        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; text-align: center; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        .action-link { 
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 2px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .verify { background-color: #007bff; color: white; }
+        
+        /* Status Badges */
+        .status { padding: 5px 8px; border-radius: 4px; font-weight: bold; font-size: 0.9em; }
+        .PENDING { background-color: #ffc107; color: black; }
+        .FULFILLED { background-color: #28a745; color: white; }
+        .REJECTED { background-color: #dc3545; color: white; }
+        .VERIFIED { background-color: #6c757d; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ title }}</h1>
+        
+        <p><a href="{{ url_for('main.home_dashboard') }}">&larr; Back to Dashboard</a> | 
+           <a href="{{ url_for('staff.view_requests') }}">View Pending Requests Only</a></p>
+
+        {% if success %}
+        <p class="message success">✅ {{ success }}</p>
+        {% endif %}
+        {% if error %}
+        <p class="message error">❌ {{ error }}</p>
+        {% endif %}
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Request ID</th>
+                    <th>Hospital ID</th>
+                    <th>Blood Type</th>
+                    <th>Quantity (units)</th>
+                    <th>Date</th>
+                    <th>Urgent?</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if requests %}
+                    {% for req in requests %}
+                    <tr>
+                        <td>{{ req.id }}</td>
+                        <td>{{ req.hospitalId }}</td>
+                        <td>{{ req.bloodType }}</td>
+                        <td>{{ req.quantity }}</td>
+                        <td>{{ req.date }}</td>
+                        <td>{{ req.isUrgent }}</td>
+                        <td>
+                            <span class="status {{ req.status }}">{{ req.status }}</span>
+                        </td>
+                        <td>
+                            {% if req.status == 'FULFILLED' %}
+                                <a href="{{ url_for('staff.handle_verify_fulfillment', id=req.id) }}" class="action-link verify" 
+                                   onclick="return confirm('Confirm receipt and closure of request {{ req.id }}?');">Verify & Close</a>
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; font-style: italic;">No blood requests recorded in the system.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -24,6 +24,8 @@ class RequestStatus(enum.Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"
     FULFILLED = "FULFILLED"
+    VERIFIED = "VERIFIED"
+    REJECTED = "REJECTED"
 
 class DonationStatus(enum.Enum):
     COMPLETE = "COMPLETE"
@@ -155,6 +157,7 @@ class User(Base):
 class Donor(User):
     __tablename__ = 'donors'
     userId = Column(String, ForeignKey('users.userId'), primary_key=True)
+    bloodType = Column(Enum(BloodType), nullable=False)
     lastDonationDate = Column(Date, nullable=True)
     isEligible = Column(Boolean, default=True)
     

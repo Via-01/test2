@@ -26,13 +26,13 @@ def populate_database():
                 user_fk=user_id
             )
         
-        donor_user = Donor(userId="U001", username="john_doe_donor", passwordHash="pwhash1", timestamp=date.today(), lastDonationDate=date(2025, 10, 1), isEligible=True, user_type='donor')
+        donor_user = Donor(userId="U001", username="john_doe_donor", bloodType = "A_POSITIVE", passwordHash="pwhash1", timestamp=date.today(), lastDonationDate=date(2025, 10, 1), isEligible=True, user_type='donor')
         admin_user = HospitalAdmin(userId="U002", username="admin_grace", passwordHash="pwhash2", timestamp=date.today(), hospitalInitId="H-MAIN", user_type='hospital_admin')
         staff_user = BloodBankStaff(userId="U003", username="staff_mike", passwordHash="pwhash3", timestamp=date.today(), user_type='blood_bank_staff')
 
         db.add_all([
             donor_user, admin_user, staff_user,
-            create_contact("U001", "555-1234", "john.doe@example.com"),
+            create_contact("U001", "A_POSITIVE", "555-1234", "john.doe@example.com"),
             create_contact("U002", "555-5678", "admin.grace@mainhosp.com"),
             create_contact("U003", "555-9012", "mike.staff@bloodbank.org")
         ])

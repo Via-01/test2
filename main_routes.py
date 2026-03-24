@@ -1,5 +1,4 @@
-# main_routes.py (Focus on home_dashboard function)
-
+# main_routes.py
 from flask import Blueprint, render_template, request, redirect, url_for
 from databases import get_db, SessionLocal 
 from models import Donor, ContactInfo
@@ -17,29 +16,32 @@ def home_dashboard():
         for donor in donors:
             contact = db.query(ContactInfo).filter(ContactInfo.user_fk == donor.userId).first()
             
-            is_eligible = check_donor_eligibility(donor)
+            # --- FIX: Use the stored donor.isEligible status for display ---
+            # This status is directly updated by the 'Record Donation' and 'Health Update' routes.
+            stored_is_eligible = donor.isEligible 
             
-            # --- MODIFICATION HERE: Restrict displayed ID to 7 characters ---
-            # If the ID starts with 'U', we keep the prefix and the next 6 chars.
-            # If it's an old, long UUID, we just show the first 7 chars for display.
-            display_id = donor.userId[:5]
+            # Truncate ID to 7 characters for display
+            display_id = donor.userId[:7] 
             
             donor_list.append({
                 "username": donor.username,
-                "userId": display_id, # Use the restricted ID for display
+                "userId": display_id, 
                 "email": contact.email if contact else "N/A",
                 "phone": contact.phone if contact else "N/A",
                 "lastDonation": donor.lastDonationDate.strftime("%Y-%m-%d") if donor.lastDonationDate else "N/A",
-                "isEligible": "Eligible" if is_eligible else "Ineligible"
+                # Display the stored status
+                "isEligible": "Eligible" if stored_is_eligible else "Ineligible" 
             })
         
         success_message = request.args.get('success')
+        error_message = request.args.get('error')
 
         return render_template(
             'index.html', 
             title='LifeLink Dashboard', 
             donors=donor_list,
-            success=success_message
+            success=success_message,
+            error=error_message
         )
     finally:
         db.close()
