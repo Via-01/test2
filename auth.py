@@ -62,13 +62,20 @@ def role_required(*allowed_roles):
             if not session.get("user_id"):
                 flash("Please log in to access this page.", "warning")
                 return redirect(url_for("main.login", next=request.path))
+
             user_type = session.get("user_type", "")
+
+            # Admin bypass
+            if user_type == "admin":
+                return f(*args, **kwargs)
+
             if user_type not in allowed_roles:
                 flash(
                     f"Access denied. Required role: {' or '.join(allowed_roles)}.",
                     "error",
                 )
                 return redirect(url_for("main.home_dashboard"))
+
             return f(*args, **kwargs)
         return decorated
     return decorator

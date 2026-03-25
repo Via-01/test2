@@ -137,7 +137,7 @@
     <a href="{{ url_for('donor.donor_dashboard') }}" class="nav-link {% if 'donor' in (request.endpoint or '') %}active{% endif %}">
       <span class="nav-icon">🩸</span>Donor Management
     </a>
-    {% if session.user_type == 'blood_bank_staff' %}
+    {% if session.user_type in ['blood_bank_staff', 'admin'] %}
     <div class="nav-section">Operations</div>
     <a href="{{ url_for('staff.new_donation_form') }}" class="nav-link {% if request.endpoint=='staff.new_donation_form' %}active{% endif %}">
       <span class="nav-icon">➕</span>Record Donation
@@ -154,7 +154,7 @@
     <a href="{{ url_for('inventory.view_inventory_stock') }}" class="nav-link {% if 'inventory' in (request.endpoint or '') %}active{% endif %}">
       <span class="nav-icon">📦</span>Inventory
     </a>
-    {% elif session.user_type == 'hospital_admin' %}
+    {% elif session.user_type in ['hospital_admin', 'admin'] %}
     <div class="nav-section">Requests</div>
     <a href="{{ url_for('staff.new_blood_request_form') }}" class="nav-link {% if request.endpoint=='staff.new_blood_request_form' %}active{% endif %}">
       <span class="nav-icon">📝</span>Submit Request
