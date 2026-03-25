@@ -1,104 +1,218 @@
 # seed.py
-from datetime import date
+from datetime import date, timedelta
 from databases import SessionLocal, init_db
-from models import (
-    Address, BloodType, User, Donor, HospitalAdmin, BloodBankStaff, 
-    BloodBankUnit, Inventory, BloodComponent, LogAction, AuditLog, 
-    ContactInfo, RequestStatus, DonationStatus, Donation, BloodRequest, HospitalUnit
-)
+from models import *
 import random
 from uuid import uuid4
 
+blood_types = list(BloodType)
+request_statuses = list(RequestStatus)
+donation_statuses = list(DonationStatus)
+log_actions = list(LogAction)
+
+def random_date():
+    return date.today() - timedelta(days=random.randint(0, 365))
+
 def populate_database():
-    """Populates the database with initial sample data."""
-    init_db() # Ensure tables are created
+    init_db()
     db = SessionLocal()
 
     try:
         print("Starting database population...")
 
-        # --- 1. Create Base Users and Contact Info ---
-        def create_contact(user_id, phone, email):
-            return ContactInfo(
-                contactId=f"C-{user_id}",
-                phone=phone,
-                email=email,
-                user_fk=user_id
+        # ---------------------------
+        # 1. ADDRESSES
+        # ---------------------------
+        addresses = []
+        for i in range(80):
+            addr = Address(
+                addressId=f"A{i:03}",
+                street=f"{i} Main Street",
+                city="Metropolis",
+                state="CA",
+                zipCode=f"900{i:02}",
+                latitude=34.0 + random.random(),
+                longitude=-118.0 + random.random()
             )
-        
-        donor_user = Donor(userId="U001", username="john_doe_donor", bloodType = "A_POSITIVE", passwordHash="pwhash1", timestamp=date.today(), lastDonationDate=date(2025, 10, 1), isEligible=True, user_type='donor')
-        admin_user = HospitalAdmin(userId="U002", username="admin_grace", passwordHash="pwhash2", timestamp=date.today(), hospitalInitId="H-MAIN", user_type='hospital_admin')
-        staff_user = BloodBankStaff(userId="U003", username="staff_mike", passwordHash="pwhash3", timestamp=date.today(), user_type='blood_bank_staff')
+            addresses.append(addr)
+        db.add_all(addresses)
 
-        db.add_all([
-            donor_user, admin_user, staff_user,
-            create_contact("U001", "A_POSITIVE", "555-1234", "john.doe@example.com"),
-            create_contact("U002", "555-5678", "admin.grace@mainhosp.com"),
-            create_contact("U003", "555-9012", "mike.staff@bloodbank.org")
-        ])
+        # ---------------------------
+        # 2. BLOOD BANK UNITS
+        # ---------------------------
+        bank_units = []
+        for i in range(10):
+            unit = BloodBankUnit(
+                unitId=f"BBU{i:03}",
+                name=f"Blood Bank {i}",
+                contactNumber=f"555-{1000+i}"
+            )
+            bank_units.append(unit)
+        db.add_all(bank_units)
 
-        # --- 2. Create Addresses ---
-        bank_address = Address(addressId="A001", street="123 Main St", city="Metropolis", state="CA", zipCode="90210", latitude=34.05, longitude=-118.24)
-        hospital_address = Address(addressId="A002", street="456 Health Dr", city="Metropolis", state="CA", zipCode="90211", latitude=34.06, longitude=-118.25)
-        db.add_all([bank_address, hospital_address])
+        # ---------------------------
+        # 3. INVENTORY
+        # ---------------------------
+        inventories = []
+        for i in range(80):
+            inv = Inventory(
+                inventoryId=f"I{i:03}",
+                unitsAvailable=random.randint(10, 300),
+                lastUpdated=random_date(),
+                minOrderAmt=random.randint(5, 20),
+                maxStorage=random.randint(200, 800),
+                unitId=random.choice(bank_units).unitId,
+                blood_type=random.choice(blood_types),
+                component=random.choice(["WHOLE_BLOOD", "PLASMA", "PLATELETS"])
+            )
+            inventories.append(inv)
+        db.add_all(inventories)
 
-        # --- 3. Create Blood Bank Unit and Inventory ---
-        packed_red_cells = BloodComponent(componentId="BC001", name="Packed Red Cells", storageConditions="2-6°C")
-        platelets = BloodComponent(componentId="BC002", name="Platelets", storageConditions="20-24°C, agitated")
-        db.add_all([packed_red_cells, platelets])
+        # ---------------------------
+        # 4. BLOOD COMPONENTS
+        # ---------------------------
+        components = []
+        comp_names = ["Plasma", "Platelets", "Red Cells"]
+        for i in range(120):
+            comp = BloodComponent(
+                componentId=f"BC{i:03}",
+                name=random.choice(comp_names),
+                storageConditions="Standard Storage",
+                inventory_fk=random.choice(inventories).inventoryId
+            )
+            components.append(comp)
+        db.add_all(components)
 
-        # Inventory arguments match models.py (blood_type and component)
-        inventory_unit = Inventory(
-            inventoryId="I001", 
-            unitsAvailable=150, 
-            lastUpdated=date.today(), 
-            minOrderAmt=10, 
-            maxStorage=500.0, 
-            unitId="BBU001",
-            blood_type=BloodType.O_NEGATIVE, # Matches Inventory model column
-            component="WHOLE_BLOOD"          # Matches Inventory model column
-        )
-        bank_unit = BloodBankUnit(unitId="BBU001", name="Central Blood Storage", contactNumber="555-UNIT")
-        db.add_all([inventory_unit, bank_unit])
+        # ---------------------------
+        # 5. HOSPITAL UNITS
+        # ---------------------------
+        hospitals = []
+        for i in range(25):
+            hosp = HospitalUnit(
+                unitId=f"HU{i:03}",
+                name=f"Hospital {i}",
+                contactNumber=f"444-{2000+i}",
+                addressId=random.choice(addresses).addressId
+            )
+            hospitals.append(hosp)
+        db.add_all(hospitals)
 
-        bank_address.inventory_fk = "I001" 
+        # ---------------------------
+        # 6. USERS
+        # ---------------------------
+        users = []
+        donors = []
+        admins = []
+        staff_members = []
+        contacts = []
 
-        # --- 4. Create Hospital Unit ---
-        hospital_unit = HospitalUnit(unitId="HU001", name="City General Hospital", contactNumber="555-HOSP", addressId="A002")
-        db.add(hospital_unit)
+        for i in range(150):
+            uid = f"U{i:03}"
+            role = random.choice(["donor", "hospital_admin", "blood_bank_staff"])
 
-        # --- 5. Create Donation and Request (Test Data) ---
-        donation = Donation(
-            donationId="D001",
-            donorId="U001",
-            date=date(2025, 11, 15),
-            quantity=450,
-            blood_type=BloodType.O_POSITIVE,
-            status=DonationStatus.COMPLETE
-        )
+            if role == "donor":
+                user = Donor(
+                    userId=uid,
+                    username=f"donor{i}",
+                    passwordHash="hash",
+                    timestamp=date.today(),
+                    bloodType=random.choice(blood_types),
+                    lastDonationDate=random_date(),
+                    isEligible=random.choice([True, False]),
+                    user_type='donor'
+                )
+                donors.append(user)
 
-        # BloodRequest arguments match models.py (requestDate and isUrgent)
-        request = BloodRequest(
-            requestId="R001",
-            hospitalId="HU001",
-            requestedId="P-999", 
-            requestDate=date.today(), # Matches BloodRequest model column
-            quantity=20,
-            blood_type=BloodType.A_NEGATIVE,
-            isUrgent=True, # Matches BloodRequest model column
-            status=RequestStatus.PENDING
-        )
-        db.add_all([donation, request])
+            elif role == "hospital_admin":
+                user = HospitalAdmin(
+                    userId=uid,
+                    username=f"admin{i}",
+                    passwordHash="hash",
+                    timestamp=date.today(),
+                    hospitalInitId=random.choice(hospitals).unitId,
+                    user_type='hospital_admin'
+                )
+                admins.append(user)
 
-        # --- 6. Final Commit ---
+            else:
+                user = BloodBankStaff(
+                    userId=uid,
+                    username=f"staff{i}",
+                    passwordHash="hash",
+                    timestamp=date.today(),
+                    user_type='blood_bank_staff'
+                )
+                staff_members.append(user)
+
+            users.append(user)
+
+            contacts.append(ContactInfo(
+                contactId=f"C{i:03}",
+                phone=f"999-{3000+i}",
+                email=f"user{i}@mail.com",
+                user_fk=uid
+            ))
+
+        db.add_all(users + contacts)
+
+        # ---------------------------
+        # 7. DONATIONS
+        # ---------------------------
+        donations = []
+        for i in range(120):
+            donor = random.choice(donors)
+            donation = Donation(
+                donationId=f"D{i:03}",
+                donorId=donor.userId,
+                date=random_date(),
+                quantity=random.randint(300, 500),
+                status=random.choice(donation_statuses),
+                blood_type=donor.bloodType
+            )
+            donations.append(donation)
+        db.add_all(donations)
+
+        # ---------------------------
+        # 8. BLOOD REQUESTS
+        # ---------------------------
+        requests = []
+        for i in range(90):
+            req = BloodRequest(
+                requestId=f"R{i:03}",
+                hospitalId=random.choice(hospitals).unitId,
+                requestedId=f"P{i:03}",
+                requestDate=random_date(),
+                quantity=random.randint(1, 50),
+                blood_type=random.choice(blood_types),
+                isUrgent=random.choice([True, False]),
+                status=random.choice(request_statuses)
+            )
+            requests.append(req)
+        db.add_all(requests)
+
+        # ---------------------------
+        # 9. AUDIT LOGS
+        # ---------------------------
+        logs = []
+        for i in range(200):
+            log = AuditLog(
+                logId=f"L{i:03}",
+                userId=random.choice(users).userId,
+                timestamp=random_date(),
+                type=random.choice(log_actions),
+                details="System generated log"
+            )
+            logs.append(log)
+        db.add_all(logs)
+
         db.commit()
-        print("Database successfully populated with sample data!")
+        print("Database populated with ~800 rows successfully!")
 
     except Exception as e:
         db.rollback()
-        print(f"An error occurred during population: {e}")
+        print("Error:", e)
     finally:
         db.close()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     populate_database()

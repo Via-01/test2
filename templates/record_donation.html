@@ -23,9 +23,15 @@
         <a href="{{ url_for('main.home_dashboard') }}">← Back to Dashboard</a>
         <hr>
 
-        {% if error %}
-            <p class="message error">❌ **Error:** {{ error }}</p>
-        {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="message {{ category }}">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <form method="POST" action="{{ url_for('staff.record_donation') }}">
             <div>

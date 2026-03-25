@@ -21,9 +21,15 @@
         
         <p><a href="{{ url_for('inventory.view_inventory_stock') }}">&larr; Back to Inventory Stock</a></p>
 
-        {% if error %}
-        <p class="message error">❌ {{ error }}</p>
-        {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="message {{ category }}">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <form method="POST" action="{{ url_for('inventory.execute_transfer') }}">
             <div class="form-group">

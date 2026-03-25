@@ -28,12 +28,15 @@
             <a href="{{ url_for('inventory.transfer_units_form') }}" class="action-link transfer">Transfer Blood Units</a>
         </p>
 
-        {% if success %}
-        <p class="message success">✅ {{ success }}</p>
-        {% endif %}
-        {% if error %}
-        <p class="message error">❌ {{ error }}</p>
-        {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="message {{ category }}">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         
         <h2>Current Stock Levels</h2>
 

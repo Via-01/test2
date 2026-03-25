@@ -13,6 +13,15 @@
     <p class="subtitle">Management System Dashboard</p>
 
     <hr>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="message {{ category }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
 
     <h2 style="margin-bottom: 20px; color: #333;">Quick Actions Menu</h2>
 
