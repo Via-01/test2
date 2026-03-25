@@ -76,20 +76,36 @@ def donor_dashboard():
                 db.rollback()
                 flash(f"Unexpected error during registration: {str(e)}", 'error')
                 
-    # --- Handle Donor Eligibility Update (Unchanged) ---
+    # --- Handle Donor Health & Eligibility (Updated with Manual Override) ---
     if request.method == 'POST' and 'donor_id' in request.form:
         donor_id = request.form.get('donor_id')
-        new_last_donation_date = request.form.get('last_donation_date')
+        form_type = request.form.get('form_type')
         donor_record = db.query(Donor).filter(Donor.userId == donor_id).first()
+
         if donor_record:
             try:
-                if new_last_donation_date:
-                    new_date = date.fromisoformat(new_last_donation_date)
-                    donor_record.lastDonationDate = new_date
-                    donor_record.isEligible = is_eligible(new_date)
+                # OPTION A: Standard Cooldown Update
+                if form_type == 'update_health':
+                    new_last_donation_date = request.form.get('last_donation_date')
+                    if new_last_donation_date:
+                        new_date = date.fromisoformat(new_last_donation_date)
+                        donor_record.lastDonationDate = new_date
+                        # Recalculate based on the 56-day rule
+                        donor_record.isEligible = is_eligible(new_date)
+                        db.commit()
+                        status_str = 'Eligible' if donor_record.isEligible else 'Ineligible'
+                        flash(f"Cooldown updated for {donor_record.username}. Status: {status_str}", 'success')
+
+                # OPTION B: Manual Status Toggle (The Override)
+                elif form_type == 'manual_override':
+                    # Simply flip the current boolean status
+                    donor_record.isEligible = not donor_record.isEligible
                     db.commit()
-                    flash(f"Health updated for {donor_record.userId}. Status: {'Eligible' if donor_record.isEligible else 'Ineligible'}", 'success')
-                    return redirect(url_for('donor.donor_dashboard'))
+                    status_str = 'Eligible' if donor_record.isEligible else 'Ineligible'
+                    flash(f"Manual Override successful! {donor_record.username} is now {status_str}.", 'success')
+
+                return redirect(url_for('donor.donor_dashboard'))
+
             except ValueError:
                 db.rollback()
                 flash("Invalid date format. Use YYYY-MM-DD.", 'error')
