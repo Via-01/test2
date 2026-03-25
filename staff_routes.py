@@ -289,7 +289,7 @@ def handle_verify_fulfillment(req_id):
 
                 # 🔥 FIX: fetch ALL rows instead of one
                 inventories = db.query(Inventory).filter(
-                    Inventory.blood_type == blood_type,
+                    Inventory.blood_type == blood_type
                 ).all()
 
                 for inv in inventories:

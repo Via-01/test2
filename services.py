@@ -70,9 +70,7 @@ def get_inventory_stock(db: Session, blood_type: BloodType, unit_id: str = "BBU0
 # 3. Blood request fulfillment  (Function #15)
 # ---------------------------------------------------------------------------
 
-def fulfill_blood_request(
-    db: Session, request_id: str, unit_id: str = "BBU001"
-) -> Tuple[bool, str]:
+def fulfill_blood_request(db: Session, request_id: str) -> Tuple[bool, str]:
 
     req = db.query(BloodRequest).filter(BloodRequest.requestId == request_id).first()
     if not req:
@@ -84,16 +82,19 @@ def fulfill_blood_request(
     required_quantity = req.quantity
     remaining         = required_quantity
 
-    # Check if enough stock exists WITHOUT deducting
+    # Check total stock across all units
     for blood_type in compatible_types:
         if remaining <= 0:
             break
-        inv = db.query(Inventory).filter(
-            Inventory.blood_type == blood_type,
-            Inventory.unitId     == unit_id,
-        ).first()
-        if inv and inv.unitsAvailable > 0:
-            deduct = min(remaining, inv.unitsAvailable)
+
+        inventories = db.query(Inventory).filter(
+            Inventory.blood_type == blood_type
+        ).all()
+
+        total_available = sum(inv.unitsAvailable for inv in inventories)
+
+        if total_available > 0:
+            deduct = min(remaining, total_available)
             remaining -= deduct
 
     if remaining > 0:
@@ -103,7 +104,6 @@ def fulfill_blood_request(
             f"could only source {sourced}."
         )
 
-    # DO NOT deduct here anymore
     req.status = RequestStatus.FULFILLED
     db.commit()
     return True, f"Request '{request_id}' fulfilled — awaiting verification."
