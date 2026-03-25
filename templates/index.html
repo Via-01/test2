@@ -1,183 +1,92 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LifeLink Blood Donation Coordination</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-
-<div class="dashboard-container">
-    <h1>LifeLink Blood Donation Coordination</h1>
-    <p class="subtitle">Management System Dashboard</p>
-
-    <hr>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="message {{ category }}">
-                {{ message }}
-            </div>
-        {% endfor %}
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Dashboard</h1>
+    <p>Overview of registered donors and system status.</p>
+  </div>
+  <div class="actions">
+    {% if current_user_type == 'blood_bank_staff' %}
+    <a href="{{ url_for('donor.donor_dashboard') }}" class="btn btn-primary">+ Register Donor</a>
+    <a href="{{ url_for('staff.view_requests') }}" class="btn btn-secondary">View Requests</a>
     {% endif %}
-    {% endwith %}
-
-    <h2 style="margin-bottom: 20px; color: #333;">Quick Actions Menu</h2>
-
-    <div class="module-grid">
-
-        <!-- 1. Donor Management -->
-        <div class="module-card donor-card">
-            <div class="module-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>
-                <h2>Donor Records</h2>
-            </div>
-            <p>Manage donor registration, view history, and update health screening status.</p>
-            <div class="module-actions">
-                <a href="{{ url_for('donor.donor_dashboard') }}">Register New Donor</a>
-                <a href="{{ url_for('staff.record_donation') }}">Record New Donation</a>
-            </div>
-        </div>
-
-        <!-- 2. Blood Request Management -->
-        <div class="module-card staff-card">
-            <div class="module-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                <h2>Request Fulfillment</h2>
-            </div>
-            <p>Submit new blood requests and manage the status of pending hospital requests.</p>
-            <div class="module-actions">
-                <a href="{{ url_for('staff.new_blood_request_form') }}">Create New Request</a>
-                <a href="{{ url_for('staff.view_requests') }}">View & Fulfill Requests</a>
-                <a href="{{ url_for('staff.view_all_requests') }}">View All Request History</a>
-            </div>
-        </div>
-        
-        <!-- 3. Inventory & Donation -->
-        <div class="module-card">
-            <div class="module-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"/><path d="M7 14h10"/><path d="M12 19V8"/><path d="M12 19h-5"/><path d="M12 19h5"/></svg>
-                <h2>Inventory & Logistics</h2>
-            </div>
-            <p>Record new donations, track current stock levels, and manage unit transfers.</p>
-            <div class="module-actions">
-                <a href="{{ url_for('inventory.view_inventory_stock') }}">View Current Stock</a>
-                <a href="{{ url_for('inventory.transfer_units_form') }}">Transfer Units</a>
-            </div>
-        </div>
-        
-        <!-- 4. Reporting & Analytics -->
-        <div class="module-card donor-card">
-            <div class="module-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-1"/></svg>
-                <h2>Reporting & Analytics</h2>
-            </div>
-            <p>Generate detailed reports on blood bank performance, fulfillment, and donation metrics.</p>
-            <div class="module-actions">
-                <a href="{{ url_for('report.reports_menu') }}">Go to Reports Menu</a>
-                <a href="{{ url_for('report.blood_bank_report') }}">Blood Bank Report</a>
-                <a href="{{ url_for('report.hospital_report') }}">Hospital Report</a>
-            </div>
-        </div>
-
-    </div>
-
-    <hr>
-    <p style="text-align: center; color: #777; margin-top: 40px;">Use the links above to navigate the management system.</p>
-
+  </div>
 </div>
 
-<style>
-    /* General Styling */
-    body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; color: #333; }
-    .dashboard-container { max-width: 1200px; margin: 40px auto; background-color: #ffffff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
-    h1 { color: #A00; text-align: center; margin-bottom: 5px; font-size: 2.5em; }
-    p.subtitle { text-align: center; color: #666; margin-bottom: 40px; font-size: 1.1em; }
+<!-- Stats -->
+<div class="stat-grid">
+  <div class="stat-card accent">
+    <div class="stat-label">Total donors</div>
+    <div class="stat-value">{{ donors | length }}</div>
+    <div class="stat-sub">Registered in system</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Eligible donors</div>
+    <div class="stat-value">{{ donors | selectattr('isEligible','equalto','Eligible') | list | length }}</div>
+    <div class="stat-sub">Ready to donate</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">On cooldown</div>
+    <div class="stat-value">{{ donors | rejectattr('isEligible','equalto','Eligible') | list | length }}</div>
+    <div class="stat-sub">Within 56-day window</div>
+  </div>
+</div>
 
-    /* Grid Layout for Modules */
-    .module-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 30px;
-        margin-bottom: 40px;
-    }
+<!-- Donor table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Donors</span>
+    <input type="text" id="searchInput" placeholder="Search donors…" style="width:220px;padding:7px 12px;font-size:13px;" oninput="filterTable()">
+  </div>
+  <div class="table-wrap">
+    {% if donors %}
+    <table id="donorTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>ID</th>
+          <th>Blood type</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Last donation</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in donors %}
+        <tr>
+          <td><strong>{{ d.username }}</strong></td>
+          <td style="font-family:monospace;font-size:12px;color:#666">{{ d.userId }}</td>
+          <td><span class="badge badge-red">{{ d.bloodType }}</span></td>
+          <td>{{ d.email }}</td>
+          <td>{{ d.phone }}</td>
+          <td>{{ d.lastDonation }}</td>
+          <td>
+            {% if d.isEligible == 'Eligible' %}
+              <span class="badge badge-green">Eligible</span>
+            {% else %}
+              <span class="badge badge-yellow">Cooldown</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">🩸</div>
+      <p>No donors registered yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
 
-    /* Module Card Styling */
-    .module-card {
-        background-color: #fff;
-        padding: 25px;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-        transition: transform 0.3s, box-shadow 0.3s;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        min-height: 200px;
-    }
-    .module-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Module Header */
-    .module-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-    .module-header svg {
-        width: 30px;
-        height: 30px;
-        margin-right: 15px;
-        color: #A00;
-    }
-    .module-header h2 {
-        margin: 0;
-        font-size: 1.4em;
-        color: #A00;
-    }
-
-    /* Link Styling */
-    .module-actions a {
-        display: block;
-        background-color: #A00;
-        color: white;
-        text-align: center;
-        padding: 10px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-weight: bold;
-        margin-top: 10px;
-        transition: background-color 0.2s;
-    }
-    .module-actions a:hover {
-        background-color: #800;
-    }
-    
-    /* Theming for specific cards */
-    .module-card.donor-card .module-header svg { color: #007bff; }
-    .module-card.donor-card .module-actions a { background-color: #007bff; }
-    .module-card.donor-card .module-actions a:hover { background-color: #0056b3; }
-
-    .module-card.staff-card .module-header svg { color: #ffc107; }
-    .module-card.staff-card .module-actions a { background-color: #ffc107; color: #333;}
-    .module-card.staff-card .module-actions a:hover { background-color: #e0a800; }
-
-    /* General UI Elements */
-    hr { border: 0; height: 1px; background: #ccc; margin: 20px 0; }
-    .message { padding: 15px; margin-bottom: 20px; border-radius: 8px; font-weight: bold; }
-    .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
-    /* Responsive Adjustments */
-    @media (max-width: 768px) {
-        .dashboard-container {
-            padding: 20px;
-            margin: 20px auto;
-        }
-    }
-</style>
-
-</body>
-</html>
+<script>
+function filterTable(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('#donorTable tbody tr').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+</script>
+{% endblock %}

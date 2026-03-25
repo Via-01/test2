@@ -1,109 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ title }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
-        .container { max-width: 1000px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { color: #A00; text-align: center; }
-        p { margin: 10px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: #f2f2f2; color: #333; }
-        .urgent { color: red; font-weight: bold; }
-        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; text-align: center; }
-        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        
-        /* Action Button Styles */
-        .action-link { 
-            display: block; /* Make them stack */
-            width: 90%; /* Take up most of the cell width */
-            padding: 5px;
-            margin: 4px auto; /* Center them */
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 13px;
-            transition: background-color 0.3s;
-        }
-        .fulfill { background-color: #28a745; color: white; }
-        .reject { background-color: #dc3545; color: white; }
-        .match { background-color: #ffc107; color: black; }
-        .fulfill:hover { background-color: #218838; }
-        .reject:hover { background-color: #c82333; }
-        .match:hover { background-color: #e0a800; }
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Pending Requests</h1>
+    <p>{{ requests | length }} request{{ 's' if requests | length != 1 }} awaiting action.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.new_blood_request_form') }}" class="btn btn-primary">+ New Request</a>
+    <a href="{{ url_for('staff.view_all_requests') }}" class="btn btn-ghost">All history</a>
+  </div>
+</div>
 
-        /* Blood Type Styling */
-        .blood-type-cell { font-weight: bold; font-size: 1.1em; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ title }}</h1>
-        
-        <p><a href="{{ url_for('main.home_dashboard') }}">&larr; Back to Dashboard</a></p>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <p class="message {{ category }}">
-                    {{ message }}
-                </p>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-        
-        <p style="text-align: center; margin-top: 20px;">
-            <small>Note: This view only shows **PENDING** requests that require immediate action. 
-            <a href="{{ url_for('staff.view_all_requests') }}" style="color: #007bff; text-decoration: none; font-weight: bold;">[View All Requests History]</a></small>
-        </p>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Request ID</th>
-                    <th>Hospital ID</th>
-                    <th>Blood Type</th>
-                    <th>Quantity (units)</th>
-                    <th>Date</th>
-                    <th>Urgent?</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if requests %}
-                    {% for req in requests %}
-                    <tr>
-                        <td>{{ req.id }}</td>
-                        <td>{{ req.hospitalId }}</td>
-                        <td class="blood-type-cell">{{ req.bloodType }}</td>
-                        <td>{{ req.quantity }}</td>
-                        <td>{{ req.date }}</td>
-                        <td class="{{ 'urgent' if req.isUrgent == 'Yes' }}">
-                            {{ req.isUrgent }}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('staff.handle_fulfill_request', id=req.id) }}" class="action-link fulfill">Fulfill Inventory</a>
-                            
-                            <a href="{{ url_for('staff.handle_reject_request', id=req.id) }}" class="action-link reject" 
-                               onclick="return confirm('WARNING: Are you sure you want to REJECT request {{ req.id }}?');">Reject Request</a>
-                            
-                            <a href="{{ url_for('staff.match_donor_for_request', request_id=req.id) }}" class="action-link match">Find Donor (Urgent)</a>
-                            
-                            <br>
-                            <small style="display: block; margin-top: 5px; font-size: 10px;">Verify is for Fulfilled Requests.</small>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="7" style="text-align: center; font-style: italic;">No pending blood requests at this time.</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
+<div class="card">
+  <div class="table-wrap">
+    {% if requests %}
+    <table>
+      <thead>
+        <tr>
+          <th>Request ID</th>
+          <th>Hospital</th>
+          <th>Blood type</th>
+          <th>Units</th>
+          <th>Date</th>
+          <th>Urgent</th>
+          {% if session.user_type == 'blood_bank_staff' %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        <tr {% if r.isUrgent == 'Yes' %}class="urgent-row"{% endif %}>
+          <td style="font-family:monospace;font-size:12px;">{{ r.id }}</td>
+          <td>{{ r.hospitalId }}</td>
+          <td><span class="badge badge-red">{{ r.bloodType | replace('_',' ') }}</span></td>
+          <td><strong>{{ r.quantity }}</strong></td>
+          <td>{{ r.date }}</td>
+          <td>
+            {% if r.isUrgent == 'Yes' %}
+              <span class="badge badge-red">🚨 Urgent</span>
+            {% else %}
+              <span class="badge badge-gray">Normal</span>
+            {% endif %}
+          </td>
+          {% if session.user_type == 'blood_bank_staff' %}
+          <td>
+            <div class="actions">
+              <a href="{{ url_for('staff.handle_fulfill_request', req_id=r.id) }}" class="btn btn-sm btn-success"
+                 onclick="return confirm('Attempt to fulfil request {{ r.id }}?')">Fulfil</a>
+              <a href="{{ url_for('staff.match_donor_for_request', request_id=r.id) }}" class="btn btn-sm btn-ghost">Match donor</a>
+              <a href="{{ url_for('staff.handle_reject_request', req_id=r.id) }}" class="btn btn-sm btn-danger"
+                 onclick="return confirm('Reject request {{ r.id }}?')">Reject</a>
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">✅</div>
+      <p>No pending requests — all caught up!</p>
     </div>
-</body>
-</html>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

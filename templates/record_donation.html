@@ -1,70 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Record New Donation</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
-        .container { max-width: 600px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h2 { color: #A00; border-bottom: 2px solid #eee; padding-bottom: 5px; }
-        form div { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="text"], input[type="date"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { background-color: #A00; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #800; }
-        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Record New Blood Donation</h2>
-        <a href="{{ url_for('main.home_dashboard') }}">← Back to Dashboard</a>
-        <hr>
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Record New Donation</h1>
+    <p>Log a completed or screened donation and update inventory automatically.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('main.home_dashboard') }}" class="btn btn-ghost">← Back</a>
+  </div>
+</div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <p class="message {{ category }}">
-                        {{ message }}
-                    </p>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <form method="POST" action="{{ url_for('staff.record_donation') }}">
-            <div>
-                <label for="donor_id">Donor ID / User ID:</label>
-                <input type="text" id="donor_id" name="donor_id" placeholder="e.g., 35835678-91b4-419b-abd9-b72d69f41b8b" required>
-            </div>
-            <div>
-                <label for="date">Donation Date:</label>
-                <input type="date" id="date" name="date" value="{{ today }}" required>
-            </div>
-            <div>
-                <label for="quantity">Quantity (mL):</label>
-                <input type="text" id="quantity" name="quantity" value="450" required>
-            </div>
-            <div>
-                <label for="blood_type">Blood Type:</label>
-                <select id="blood_type" name="blood_type" required>
-                    <option value="O_POSITIVE">O Positive (O+)</option>
-                    <option value="O_NEGATIVE">O Negative (O-)</option>
-                    <option value="A_POSITIVE">A Positive (A+)</option>
-                    <option value="A_NEGATIVE">A Negative (A-)</option>
-                    <option value="B_POSITIVE">B Positive (B+)</option>
-                    <option value="B_NEGATIVE">B Negative (B-)</option>
-                    <option value="AB_POSITIVE">AB Positive (AB+)</option>
-                    <option value="AB_NEGATIVE">AB Negative (AB-)</option>
-                </select>
-            </div>
-            <div>
-                <label for="staff_id">Staff ID (Recorder):</label>
-                <input type="text" id="staff_id" name="staff_id" placeholder="e.g., U003" required>
-            </div>
-            <button type="submit">Record Donation</button>
-        </form>
+<div style="max-width:640px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Donation details</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('staff.record_donation') }}">
+        <div class="form-grid">
+          <div class="form-group form-full">
+            <label for="donor_id">Donor ID (first characters accepted)</label>
+            <input type="text" id="donor_id" name="donor_id" required placeholder="Paste donor UUID or prefix">
+          </div>
+          <div class="form-group">
+            <label for="blood_type">Blood type</label>
+            <select id="blood_type" name="blood_type" required>
+              <option value="">— Select —</option>
+              {% for bt in blood_types %}
+              <option value="{{ bt }}">{{ bt | replace('_',' ') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="quantity">Quantity (mL)</label>
+            <input type="number" id="quantity" name="quantity" required min="1" max="500" placeholder="e.g. 450">
+          </div>
+          <div class="form-group">
+            <label for="status">Donation status</label>
+            <select id="status" name="status" required>
+              <option value="">— Select —</option>
+              {% for ds in donation_statuses %}
+              <option value="{{ ds }}">{{ ds | replace('_',' ') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="unit_id">Blood bank unit ID</label>
+            <input type="text" id="unit_id" name="unit_id" value="BBU001" placeholder="BBU001">
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Record Donation</button>
+          <a href="{{ url_for('main.home_dashboard') }}" class="btn btn-ghost">Cancel</a>
+        </div>
+      </form>
     </div>
-</body>
-</html>
+  </div>
+  <p style="margin-top:14px;font-size:13px;color:var(--text2);">
+    ℹ When status is set to <strong>COMPLETE</strong>, inventory is updated and the donor enters the 56-day cooldown automatically.
+  </p>
+</div>
+{% endblock %}

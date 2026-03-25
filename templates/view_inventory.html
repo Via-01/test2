@@ -1,75 +1,110 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ title }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
-        .container { max-width: 1000px; margin: auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { color: #A00; text-align: center; }
-        p { margin: 10px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-        th { background-color: #f2f2f2; color: #333; }
-        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; text-align: center; }
-        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .action-link { display: inline-block; padding: 6px 10px; margin: 2px; text-decoration: none; border-radius: 4px; font-weight: bold; }
-        .transfer { background-color: #ffc107; color: black; }
-        .critical { background-color: #dc3545; color: white; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ title }}</h1>
-        
-        <p><a href="{{ url_for('main.home_dashboard') }}">&larr; Back to Dashboard</a></p>
-        <p style="text-align: right;">
-            <a href="{{ url_for('inventory.transfer_units_form') }}" class="action-link transfer">Transfer Blood Units</a>
-        </p>
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Blood Inventory</h1>
+    <p>Current stock levels across all blood types.</p>
+  </div>
+  <div class="actions">
+    {% if session.user_type == 'blood_bank_staff' %}
+    <a href="{{ url_for('inventory.transfer_units_form') }}" class="btn btn-primary">Transfer Units</a>
+    {% endif %}
+  </div>
+</div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <p class="message {{ category }}">
-                        {{ message }}
-                    </p>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <h2>Current Stock Levels</h2>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Blood Type</th>
-                    <th>Storage Unit ID</th>
-                    <th>Units Available (mL)</th>
-                    <th>Minimum Stock (mL)</th>
-                    <th>Last Updated</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if inventory %}
-                    {% for item in inventory %}
-                    <tr>
-                        <td>{{ item.bloodType }}</td>
-                        <td>{{ item.unitId }}</td>
-                        <td class="{{ 'critical' if item.unitsAvailable < item.minOrderAmt }}">
-                            {{ item.unitsAvailable }}
-                        </td>
-                        <td>{{ item.minOrderAmt }}</td>
-                        <td>{{ item.lastUpdated }}</td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="5" style="text-align: center; font-style: italic;">No inventory records found.</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
+<!-- Quick stock overview -->
+<div class="stat-grid">
+  {% for item in inventory %}
+  <div class="stat-card {% if item.unitsAvailable < item.minOrderAmt %}accent{% endif %}">
+    <div class="stat-label">{{ item.bloodType | replace('_',' ') }}</div>
+    <div class="stat-value">{{ item.unitsAvailable }}</div>
+    <div class="stat-sub">
+      {% if item.unitsAvailable < item.minOrderAmt %}
+        <span style="color:var(--red)">⚠ Below minimum ({{ item.minOrderAmt }})</span>
+      {% else %}
+        Stock OK
+      {% endif %}
     </div>
-</body>
-</html>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Detail table -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Inventory detail</span></div>
+  <div class="table-wrap">
+    {% if inventory %}
+    <table>
+      <thead>
+        <tr>
+          <th>Blood type</th>
+          <th>Units available</th>
+          <th>Min stock</th>
+          <th>Last updated</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in inventory %}
+        <tr {% if item.unitsAvailable < item.minOrderAmt %}style="background-color:#ffe5e5"{% endif %}>
+          <td><span class="badge badge-red">{{ item.bloodType | replace('_',' ') }}</span></td>
+          <td><strong>{{ item.unitsAvailable }}</strong></td>
+          <td>{{ item.minOrderAmt }}</td>
+          <td>{{ item.lastUpdated }}</td>
+          <td>
+            {% if item.unitsAvailable == 0 %}
+              <span class="badge badge-red">Empty</span>
+            {% elif item.unitsAvailable < item.minOrderAmt %}
+              <span class="badge badge-yellow">Low</span>
+            {% else %}
+              <span class="badge badge-green">OK</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">📦</div>
+      <p>No inventory records found. Record a donation first.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Pending Dispatch Section -->
+{% if pending_updates %}
+<div class="card" style="margin-top:20px;">
+  <div class="card-header">
+    <span class="card-title">Pending Dispatch Verification</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Request ID</th>
+          <th>Blood Type</th>
+          <th>Quantity</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in pending_updates %}
+        <tr>
+          <td>{{ req.requestId }}</td>
+          <td>{{ req.blood_type.name | replace('_',' ') }}</td>
+          <td>{{ req.quantity }}</td>
+          <td>
+            <a href="{{ url_for('staff.handle_verify_fulfillment', req_id=req.requestId) }}" class="btn btn-success">✔</a>
+            <a href="{{ url_for('staff.handle_reject_request', req_id=req.requestId) }}" class="btn btn-danger">❌</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

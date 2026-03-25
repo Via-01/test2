@@ -1,98 +1,179 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ title }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
-        .container { max-width: 900px; margin: auto; padding: 30px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h1 { color: #A00; text-align: center; margin-bottom: 10px; }
-        h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; }
-        .metadata { text-align: center; color: #666; margin-bottom: 30px; font-style: italic; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #f2f2f2; color: #333; text-align: center; }
-        td { text-align: center; }
-        .summary-box { background-color: #e6f7ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #cceeff; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ title }}</h1>
-        <div class="metadata">
-            Report Date: {{ data.report_date }} | Donation Period: {{ data.period }}
-        </div>
-        
-        <p><a href="{{ url_for('report.reports_menu') }}">&larr; Back to Reports Menu</a></p>
+{% extends "base.html" %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Blood Bank Report</h1>
+    <p>Generated {{ data.report_date }} · Period: {{ data.period }}</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('report.reports_menu') }}" class="btn btn-ghost">← Reports</a>
+    <button onclick="window.print()" class="btn btn-secondary">Print</button>
+  </div>
+</div>
 
-        <!-- Current Inventory Summary -->
-        <h2>Current Inventory Summary</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Blood Type</th>
-                    <th>Total Units Available (mL)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data.inventory_summary %}
-                <tr>
-                    <td><strong>{{ item.bloodType }}</strong></td>
-                    <td>{{ item.total_units }}</td>
-                </tr>
-                {% endfor %}
-                {% if not data.inventory_summary %}
-                <tr><td colspan="2">No current inventory records found.</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
+<!-- Inventory summary stats -->
+<div class="stat-grid">
+  {% set total_units = data.inventory_summary | sum(attribute='total_units') %}
+  <div class="stat-card accent">
+    <div class="stat-label">Total units in stock</div>
+    <div class="stat-value">{{ total_units }}</div>
+    <div class="stat-sub">Across all blood types</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Blood types tracked</div>
+    <div class="stat-value">{{ data.inventory_summary | length }}</div>
+    <div class="stat-sub">Active inventory records</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Donations (30 days)</div>
+    <div class="stat-value">{{ data.donation_volume | sum(attribute='count') }}</div>
+    <div class="stat-sub">Completed donations</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Units collected (30 days)</div>
+    <div class="stat-value">{{ data.donation_volume | sum(attribute='quantity') }}</div>
+    <div class="stat-sub">Total mL collected</div>
+  </div>
+</div>
 
-        <!-- Recent Donation Volume -->
-        <h2>Recent Donation Volume (Last 30 Days)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Blood Type</th>
-                    <th>Number of Successful Donations</th>
-                    <th>Total Quantity Donated (mL)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data.donation_volume %}
-                <tr>
-                    <td><strong>{{ item.bloodType }}</strong></td>
-                    <td>{{ item.count }}</td>
-                    <td>{{ item.quantity }}</td>
-                </tr>
-                {% endfor %}
-                {% if not data.donation_volume %}
-                <tr><td colspan="3">No successful donations recorded in the last 30 days.</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
 
-        <!-- Donation Status Breakdown -->
-        <h2>Recent Donation Status Breakdown</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Status</th>
-                    <th>Count (Last 30 Days)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data.status_breakdown %}
-                <tr>
-                    <td>{{ item.status }}</td>
-                    <td>{{ item.count }}</td>
-                </tr>
-                {% endfor %}
-                {% if not data.status_breakdown %}
-                <tr><td colspan="2">No donation status records found in the last 30 days.</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
-        
+  <!-- Inventory chart -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Current stock by blood type</span></div>
+    <div class="card-body">
+      <canvas id="inventoryChart" height="220"></canvas>
     </div>
-</body>
-</html>
+  </div>
+
+  <!-- Donation status breakdown -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Donation status breakdown (30 days)</span></div>
+    <div class="card-body">
+      {% if data.status_breakdown %}
+      <canvas id="statusChart" height="220"></canvas>
+      {% else %}
+      <div class="empty-state"><div class="icon">📭</div><p>No donations in the last 30 days.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Inventory table -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Inventory breakdown</span></div>
+    <div class="table-wrap">
+      {% if data.inventory_summary %}
+      <table>
+        <thead><tr><th>Blood type</th><th>Units available</th><th>Share</th></tr></thead>
+        <tbody>
+          {% for item in data.inventory_summary | sort(attribute='total_units', reverse=True) %}
+          <tr>
+            <td><span class="badge badge-red">{{ item.bloodType | replace('_',' ') }}</span></td>
+            <td><strong>{{ item.total_units }}</strong></td>
+            <td>
+              {% if total_units > 0 %}
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;height:6px;background:#f0f4f8;border-radius:3px;">
+                  <div style="width:{{ [(item.total_units / total_units * 100)|int, 100]|min }}%;height:100%;background:var(--red2);border-radius:3px;"></div>
+                </div>
+                <span style="font-size:12px;color:var(--text2);">{{ "%.0f"|format(item.total_units / total_units * 100) }}%</span>
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><div class="icon">📦</div><p>No inventory data.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Donation volume table -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Donation volume by type (30 days)</span></div>
+    <div class="table-wrap">
+      {% if data.donation_volume %}
+      <table>
+        <thead><tr><th>Blood type</th><th>Donations</th><th>Units (mL)</th></tr></thead>
+        <tbody>
+          {% for item in data.donation_volume | sort(attribute='count', reverse=True) %}
+          <tr>
+            <td><span class="badge badge-red">{{ item.bloodType | replace('_',' ') }}</span></td>
+            <td>{{ item.count }}</td>
+            <td>{{ item.quantity }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><div class="icon">📭</div><p>No donations recorded in the last 30 days.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BLOOD_COLORS = {
+  'O_POSITIVE':'#e74c3c','O_NEGATIVE':'#c0392b',
+  'A_POSITIVE':'#e67e22','A_NEGATIVE':'#d35400',
+  'B_POSITIVE':'#3498db','B_NEGATIVE':'#2980b9',
+  'AB_POSITIVE':'#9b59b6','AB_NEGATIVE':'#8e44ad'
+};
+
+// Inventory bar chart
+const invData = {{ data.inventory_summary | tojson }};
+if(invData.length){
+  new Chart(document.getElementById('inventoryChart'), {
+    type:'bar',
+    data:{
+      labels: invData.map(d=>d.bloodType.replace('_',' ')),
+      datasets:[{
+        label:'Units available',
+        data: invData.map(d=>d.total_units),
+        backgroundColor: invData.map(d=>BLOOD_COLORS[d.bloodType]||'#888'),
+        borderRadius:6,
+        borderSkipped:false,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true,grid:{color:'#f0f4f8'},ticks:{font:{family:'DM Sans'}}},
+        x:{grid:{display:false},ticks:{font:{family:'DM Sans'}}}
+      }
+    }
+  });
+}
+
+// Status doughnut
+const stData = {{ data.status_breakdown | tojson }};
+if(stData.length){
+  new Chart(document.getElementById('statusChart'),{
+    type:'doughnut',
+    data:{
+      labels: stData.map(d=>d.status),
+      datasets:[{
+        data: stData.map(d=>d.count),
+        backgroundColor:['#2ecc71','#e74c3c','#f39c12','#3498db'],
+        borderWidth:0,
+        hoverOffset:4
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{family:'DM Sans'},padding:16}},
+      },
+      cutout:'65%'
+    }
+  });
+}
+</script>
+{% endblock %}

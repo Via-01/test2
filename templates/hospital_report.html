@@ -1,90 +1,171 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ title }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f8f8; }
-        .container { max-width: 900px; margin: auto; padding: 30px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h1 { color: #007bff; text-align: center; margin-bottom: 10px; }
-        h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 25px; }
-        .metadata { text-align: center; color: #666; margin-bottom: 30px; font-style: italic; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #f2f2f2; color: #333; text-align: center; }
-        td { text-align: center; }
-        
-        .fulfillment-rate {
-            background-color: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 5px;
-            font-size: 1.4em;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{{ title }}</h1>
-        <div class="metadata">
-            Report Date: {{ data.report_date }} | Total Requests Analyzed: {{ data.total_requests }}
-        </div>
-        
-        <p><a href="{{ url_for('report.reports_menu') }}">&larr; Back to Reports Menu</a></p>
+{% extends "base.html" %}
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Hospital Request Report</h1>
+    <p>Generated {{ data.report_date }} · All-time data</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('report.reports_menu') }}" class="btn btn-ghost">← Reports</a>
+    <button onclick="window.print()" class="btn btn-secondary">Print</button>
+  </div>
+</div>
 
-        <!-- Fulfillment Rate -->
-        <h2>Request Fulfillment Success</h2>
-        <div class="fulfillment-rate">
-            Overall Fulfillment Rate: {{ data.fulfillment_rate }}
-        </div>
+<!-- Key metrics -->
+<div class="stat-grid">
+  <div class="stat-card accent">
+    <div class="stat-label">Total requests</div>
+    <div class="stat-value">{{ data.total_requests }}</div>
+    <div class="stat-sub">All time</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Fulfilment rate</div>
+    <div class="stat-value">{{ data.fulfillment_rate }}</div>
+    <div class="stat-sub">Of closed requests</div>
+  </div>
+  {% for item in data.requests_by_urgency %}
+  <div class="stat-card">
+    <div class="stat-label">{{ item.type }} requests</div>
+    <div class="stat-value">{{ item.count }}</div>
+    <div class="stat-sub">{{ item.type }} priority</div>
+  </div>
+  {% endfor %}
+</div>
 
-        <!-- Requests by Status -->
-        <h2>Request Status Breakdown (All Time)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Status</th>
-                    <th>Count</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data.requests_by_status %}
-                <tr>
-                    <td><strong>{{ item.status }}</strong></td>
-                    <td>{{ item.count }}</td>
-                </tr>
-                {% endfor %}
-                {% if not data.requests_by_status %}
-                <tr><td colspan="2">No request records found.</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
 
-        <!-- Requests by Urgency -->
-        <h2>Requests by Urgency Level (All Time)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Urgency</th>
-                    <th>Count</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in data.requests_by_urgency %}
-                <tr>
-                    <td><strong>{{ item.type }}</strong></td>
-                    <td>{{ item.count }}</td>
-                </tr>
-                {% endfor %}
-                {% if not data.requests_by_urgency %}
-                <tr><td colspan="2">No request urgency data found.</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
-        
+  <!-- Status chart -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Requests by status</span></div>
+    <div class="card-body">
+      {% if data.requests_by_status %}
+      <canvas id="statusChart" height="220"></canvas>
+      {% else %}
+      <div class="empty-state"><div class="icon">📭</div><p>No request data yet.</p></div>
+      {% endif %}
     </div>
-</body>
-</html>
+  </div>
+
+  <!-- Urgency chart -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Urgency split</span></div>
+    <div class="card-body">
+      {% if data.requests_by_urgency %}
+      <canvas id="urgencyChart" height="220"></canvas>
+      {% else %}
+      <div class="empty-state"><div class="icon">📭</div><p>No urgency data.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Status table -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Status breakdown</span></div>
+    <div class="table-wrap">
+      {% if data.requests_by_status %}
+      {% set total = data.requests_by_status | sum(attribute='count') %}
+      <table>
+        <thead><tr><th>Status</th><th>Count</th><th>Share</th></tr></thead>
+        <tbody>
+          {% for item in data.requests_by_status | sort(attribute='count', reverse=True) %}
+          {% set badge = {
+              'PENDING':'badge-yellow','FULFILLED':'badge-blue',
+              'VERIFIED':'badge-green','REJECTED':'badge-red'
+            }.get(item.status,'badge-gray') %}
+          <tr>
+            <td><span class="badge {{ badge }}">{{ item.status }}</span></td>
+            <td><strong>{{ item.count }}</strong></td>
+            <td>
+              {% if total > 0 %}
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;height:6px;background:#f0f4f8;border-radius:3px;">
+                  <div style="width:{{ [(item.count / total * 100)|int, 100]|min }}%;height:100%;background:#3498db;border-radius:3px;"></div>
+                </div>
+                <span style="font-size:12px;color:var(--text2);">{{ "%.0f"|format(item.count / total * 100) }}%</span>
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state"><div class="icon">🗂️</div><p>No requests found.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Fulfilment rate card -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Fulfilment rate detail</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;gap:12px;">
+      <div style="font-family:'Fraunces',serif;font-size:56px;font-weight:700;color:var(--text);line-height:1;">
+        {{ data.fulfillment_rate }}
+      </div>
+      <p style="color:var(--text2);font-size:14px;text-align:center;">
+        of all closed requests were fulfilled or verified.<br>
+        Rejected requests are excluded from stock impact.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STATUS_COLORS = {
+  'PENDING':'#f39c12','FULFILLED':'#3498db',
+  'VERIFIED':'#2ecc71','REJECTED':'#e74c3c','ACCEPTED':'#95a5a6'
+};
+
+const stData = {{ data.requests_by_status | tojson }};
+if(stData.length){
+  new Chart(document.getElementById('statusChart'),{
+    type:'bar',
+    data:{
+      labels:stData.map(d=>d.status),
+      datasets:[{
+        label:'Requests',
+        data:stData.map(d=>d.count),
+        backgroundColor:stData.map(d=>STATUS_COLORS[d.status]||'#888'),
+        borderRadius:6,
+        borderSkipped:false,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true,grid:{color:'#f0f4f8'},ticks:{font:{family:'DM Sans'}}},
+        x:{grid:{display:false},ticks:{font:{family:'DM Sans'}}}
+      }
+    }
+  });
+}
+
+const urgData = {{ data.requests_by_urgency | tojson }};
+if(urgData.length){
+  new Chart(document.getElementById('urgencyChart'),{
+    type:'doughnut',
+    data:{
+      labels:urgData.map(d=>d.type),
+      datasets:[{
+        data:urgData.map(d=>d.count),
+        backgroundColor:['#e74c3c','#3498db'],
+        borderWidth:0,
+        hoverOffset:4
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom',labels:{font:{family:'DM Sans'},padding:16}}
+      },
+      cutout:'65%'
+    }
+  });
+}
+</script>
+{% endblock %}

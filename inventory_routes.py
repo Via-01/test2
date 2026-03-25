@@ -1,134 +1,166 @@
 # inventory_routes.py
-from flask import Blueprint, render_template, request, redirect, url_for
-from databases import get_db 
-# Note: Ensure you import all necessary models and types here
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+from databases import get_db
 from models import Inventory, BloodBankUnit, BloodType
-from datetime import date # Needed for updating lastUpdated
-from uuid import uuid4 # Needed for creating new Inventory IDs
+from auth import role_required
+from datetime import date
+from uuid import uuid4
+from sqlalchemy import func
+from models import BloodRequest, RequestStatus
 
 inventory_bp = Blueprint('inventory', __name__, url_prefix='/inventory')
 
-# --- 1. View Inventory Stock (Function #10: trackInventory) ---
+STAFF_ROLES   = ('blood_bank_staff',)
+SHARED_ROLES  = ('blood_bank_staff', 'hospital_admin')
+
+
+# ---------------------------------------------------------------------------
+# View stock  (staff + hospital_admin can view)
+# ---------------------------------------------------------------------------
 
 @inventory_bp.route('/stock')
+@role_required(*SHARED_ROLES)
 def view_inventory_stock():
-    """
-    Function #10: Renders a dashboard showing current blood inventory levels by type and unit.
-    """
     db = next(get_db())
     try:
-        inventory_data = db.query(Inventory).all() 
+        # Aggregate stock per blood type
+        items = db.query(
+            Inventory.blood_type,
+            func.sum(Inventory.unitsAvailable).label("totalUnits"),
+            func.max(Inventory.lastUpdated).label("lastUpdated")
+        ).group_by(Inventory.blood_type).all()
 
-        stock_list = []
-        for item in inventory_data:
-            stock_list.append({
-                "bloodType": item.blood_type.name,
-                "unitId": item.unitId,
-                "unitsAvailable": item.unitsAvailable,
-                "minOrderAmt": item.minOrderAmt,
-                "lastUpdated": item.lastUpdated.strftime("%Y-%m-%d")
-            })
+        stock_list = [{
+            "bloodType": item.blood_type.name,
+            "unitsAvailable": item.totalUnits,
+            "minOrderAmt": 50,
+            "lastUpdated": item.lastUpdated.strftime("%Y-%m-%d") if item.lastUpdated else "N/A",
+        } for item in items]
 
-        success_message = request.args.get('success')
-        error_message = request.args.get('error')
+        # Pending dispatch updates
+        pending_updates = db.query(BloodRequest).filter(
+            BloodRequest.status == RequestStatus.FULFILLED
+        ).all()
 
         return render_template(
-            'view_inventory.html', 
-            inventory=stock_list, 
+            'view_inventory.html',
+            inventory=stock_list,
+            pending_updates=pending_updates,
             title="Blood Stock Management",
-            success=success_message,
-            error=error_message
+            success=request.args.get('success'),
+            error=request.args.get('error'),
+        )
+
+    except Exception as e:
+        flash(f"Error loading inventory: {e}", 'error')
+        return render_template('view_inventory.html', inventory=[], title="Blood Stock Management")
+    finally:
+        db.close()
+
+
+# ---------------------------------------------------------------------------
+# Transfer units  (staff only)
+# ---------------------------------------------------------------------------
+
+@inventory_bp.route('/transfer')
+@role_required(*STAFF_ROLES)
+def transfer_units_form():
+    db = next(get_db())
+    try:
+        units    = db.query(BloodBankUnit).all()
+        unit_ids = [u.unitId for u in units]
+        blood_types = [bt.name for bt in BloodType]
+        return render_template(
+            'transfer_units.html',
+            title="Transfer Blood Units",
+            unit_ids=unit_ids,
+            blood_types=blood_types,
+            error=request.args.get('error'),
         )
     finally:
         db.close()
 
-# --- 2. Transfer Blood Units (Function #12: transferInventory) ---
-
-@inventory_bp.route('/transfer')
-def transfer_units_form():
-    """Renders the form for staff to transfer blood units between storage units."""
-    db = next(get_db())
-    try:
-        # Fetch available Blood Bank Unit IDs for selection fields
-        units = db.query(BloodBankUnit).all()
-        unit_ids = [unit.unitId for unit in units]
-        
-        # Capture messages passed back after a failed execution attempt
-        error_message = request.args.get('error')
-        
-        return render_template('transfer_units.html', 
-                               title="Transfer Blood Units", 
-                               unit_ids=unit_ids,
-                               error=error_message)
-    finally:
-        db.close()
 
 @inventory_bp.route('/transfer/execute', methods=['POST'])
+@role_required(*STAFF_ROLES)
 def execute_transfer():
-    """
-    Function #12: Handles the logic for transferring units from a source to a destination unit.
-    """
     db = next(get_db())
     try:
-        source_unit = request.form.get('source_unit')
-        dest_unit = request.form.get('dest_unit')
-        blood_type_str = request.form.get('blood_type')
-        
+        source_unit    = request.form.get('source_unit', '').strip()
+        dest_unit      = request.form.get('dest_unit', '').strip()
+        blood_type_str = request.form.get('blood_type', '').strip()
+
         try:
-            quantity = int(request.form.get('quantity'))
+            quantity = int(request.form.get('quantity', 0))
+            if quantity <= 0:
+                raise ValueError
         except (ValueError, TypeError):
-            return redirect(url_for('inventory.transfer_units_form', error="Invalid quantity. Please enter a valid number."))
-            
+            flash("Quantity must be a positive whole number.", 'error')
+            return redirect(url_for('inventory.transfer_units_form'))
+
         if source_unit == dest_unit:
-            return redirect(url_for('inventory.transfer_units_form', error="Source and Destination units cannot be the same."))
+            flash("Source and destination units cannot be the same.", 'error')
+            return redirect(url_for('inventory.transfer_units_form'))
 
-        blood_type = BloodType[blood_type_str]
-        
-        # 1. Deduct from Source Inventory
-        source_inventory = db.query(Inventory).filter(
-            Inventory.unitId == source_unit,
-            Inventory.blood_type == blood_type
+        try:
+            blood_type = BloodType[blood_type_str]
+        except KeyError:
+            flash(f"Invalid blood type: '{blood_type_str}'.", 'error')
+            return redirect(url_for('inventory.transfer_units_form'))
+
+        # Deduct from source
+        source_inv = db.query(Inventory).filter(
+            Inventory.unitId     == source_unit,
+            Inventory.blood_type == blood_type,
         ).first()
 
-        if not source_inventory or source_inventory.unitsAvailable < quantity:
-            db.rollback()
-            return redirect(url_for('inventory.transfer_units_form', error=f"Insufficient stock ({source_inventory.unitsAvailable}mL available) in Source Unit {source_unit} for {blood_type_str}."))
+        if not source_inv:
+            flash(f"No {blood_type_str} stock found in source unit '{source_unit}'.", 'error')
+            return redirect(url_for('inventory.transfer_units_form'))
 
-        source_inventory.unitsAvailable -= quantity
-        source_inventory.lastUpdated = date.today()
-        
-        # 2. Add to Destination Inventory
-        dest_inventory = db.query(Inventory).filter(
-            Inventory.unitId == dest_unit,
-            Inventory.blood_type == blood_type
-        ).first()
-
-        if dest_inventory:
-            dest_inventory.unitsAvailable += quantity
-            dest_inventory.lastUpdated = date.today()
-        else:
-            # Create a new inventory record for the destination if it doesn't exist
-            new_dest_inventory = Inventory(
-                inventoryId=f"I{uuid4().hex[:6].upper()}",
-                unitsAvailable=quantity,
-                lastUpdated=date.today(),
-                minOrderAmt=10, 
-                maxStorage=500.0, 
-                unitId=dest_unit,
-                blood_type=blood_type,
-                component="WHOLE_BLOOD" 
+        if source_inv.unitsAvailable < quantity:
+            flash(
+                f"Insufficient stock: {source_inv.unitsAvailable} units available in "
+                f"'{source_unit}', requested {quantity}.",
+                'error',
             )
-            db.add(new_dest_inventory)
+            return redirect(url_for('inventory.transfer_units_form'))
+
+        source_inv.unitsAvailable -= quantity
+        source_inv.lastUpdated     = date.today()
+
+        # Add to destination
+        dest_inv = db.query(Inventory).filter(
+            Inventory.unitId     == dest_unit,
+            Inventory.blood_type == blood_type,
+        ).first()
+
+        if dest_inv:
+            dest_inv.unitsAvailable += quantity
+            dest_inv.lastUpdated     = date.today()
+        else:
+            db.add(Inventory(
+                inventoryId    = f"I{uuid4().hex[:6].upper()}",
+                unitsAvailable = quantity,
+                lastUpdated    = date.today(),
+                minOrderAmt    = 10,
+                maxStorage     = 500.0,
+                unitId         = dest_unit,
+                blood_type     = blood_type,
+                component      = "WHOLE_BLOOD",
+            ))
 
         db.commit()
-        return redirect(url_for('inventory.view_inventory_stock', success=f"Successfully transferred {quantity}mL of {blood_type_str} from {source_unit} to {dest_unit}."))
+        flash(
+            f"Transferred {quantity} units of {blood_type_str} "
+            f"from '{source_unit}' to '{dest_unit}'.",
+            'success',
+        )
+        return redirect(url_for('inventory.view_inventory_stock'))
 
-    except KeyError:
-        db.rollback()
-        return redirect(url_for('inventory.transfer_units_form', error="Invalid Blood Type selected."))
     except Exception as e:
         db.rollback()
-        print(f"Error during unit transfer: {e}")
-        return redirect(url_for('inventory.transfer_units_form', error=f"An unexpected error occurred during transfer: {e}"))
+        flash(f"Unexpected error during transfer: {e}", 'error')
+        return redirect(url_for('inventory.transfer_units_form'))
     finally:
         db.close()

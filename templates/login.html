@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login — LifeLink</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#0d1b2a;--red:#c0392b;--red2:#e74c3c;--white:#fff;--off:#f4f5f7;--text:#1a2535;--text2:#4a5568}
+    body{font-family:'DM Sans',sans-serif;background:var(--navy);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .login-wrap{width:100%;max-width:420px;}
+    .login-brand{text-align:center;margin-bottom:32px;}
+    .brand-mark{font-family:'Fraunces',serif;font-size:28px;color:var(--white);display:inline-flex;align-items:center;gap:10px;}
+    .brand-dot{width:12px;height:12px;background:var(--red2);border-radius:50%;animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .brand-sub{color:rgba(255,255,255,.45);font-size:13px;margin-top:6px;letter-spacing:.5px;text-transform:uppercase;}
+    .card{background:var(--white);border-radius:14px;padding:36px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+    .card h2{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--text);margin-bottom:6px;}
+    .card p{color:var(--text2);font-size:14px;margin-bottom:28px;}
+    .form-group{margin-bottom:18px;}
+    label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin-bottom:6px;}
+    input{width:100%;padding:11px 13px;border:1.5px solid #d1d5db;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;}
+    input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(192,57,43,.12);}
+    .btn{width:100%;padding:12px;background:var(--red);color:var(--white);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:8px;}
+    .btn:hover{background:var(--red2);}
+    .flash{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .flash.error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+    .flash.success{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+    .flash.warning{background:#fff3cd;color:#856404;border:1px solid #ffd950;}
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-brand">
+    <div class="brand-mark"><span class="brand-dot"></span>LifeLink</div>
+    <div class="brand-sub">Blood Bank Management System</div>
+  </div>
+  <div class="card">
+    <h2>Sign in</h2>
+    <p>Enter your credentials to access the system.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="flash {{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <form method="POST" action="{{ url_for('main.login') }}">
+      <input type="hidden" name="next" value="{{ request.args.get('next','') }}">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required autocomplete="username" placeholder="Enter your username">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn">Sign in →</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>
