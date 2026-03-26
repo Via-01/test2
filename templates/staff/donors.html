@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Donors{% endblock %}
+{% block topbar_title %}Donor Management{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Donor Management</h1>
+    <p>{{ donors|length }} registered donors{% if my_unit %} · Unit <strong>{{ my_unit }}</strong>{% endif %}</p>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Register New Donor</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('staff.register_donor') }}">
+        <div class="form-grid">
+          <div class="form-group"><label>Full name</label><input type="text" name="username" required placeholder="Ali Hassan"></div>
+          <div class="form-group"><label>Blood type</label>
+            <select name="blood_type" required><option value="">— Select —</option>
+            {% for bt in blood_types %}<option value="{{ bt }}">{{ bt|replace('_',' ') }}</option>{% endfor %}</select>
+          </div>
+          <div class="form-group"><label>Email</label><input type="email" name="email" required placeholder="donor@example.com"></div>
+          <div class="form-group"><label>Phone</label><input type="tel" name="phone" required placeholder="+91 98765 43210"></div>
+        </div>
+        <div class="mt-4"><button type="submit" class="btn btn-primary">Register Donor</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Update Donor Health</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('staff.update_donor_health') }}">
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Donor ID (full)</label>
+          <input type="text" name="donor_id" required placeholder="Paste full donor ID">
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Last donation date</label>
+          <input type="date" name="last_donation_date">
+        </div>
+        <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:14px;background:#f8fafc">
+          <p style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Manual override (bypasses cooldown)</p>
+          <div class="checkbox-row" style="margin-bottom:8px">
+            <input type="checkbox" id="manual_override" name="manual_override">
+            <label for="manual_override" style="color:#065f46;font-weight:600">⚡ Set ELIGIBLE regardless of cooldown</label>
+          </div>
+          <div class="checkbox-row">
+            <input type="checkbox" id="set_ineligible" name="set_ineligible">
+            <label for="set_ineligible" style="color:#991b1b;font-weight:600">🚫 Set INELIGIBLE immediately</label>
+          </div>
+          <p style="font-size:11px;color:var(--text2);margin-top:8px">If neither is checked, eligibility is recalculated from the 56-day cooldown.</p>
+        </div>
+        <button type="submit" class="btn btn-secondary">Update Status</button>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Donors</span>
+    <input type="text" placeholder="Search…" style="width:200px;padding:7px 12px;font-size:13px;"
+           oninput="document.querySelectorAll('#dt tbody tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(this.value.toLowerCase())?'':'none')">
+  </div>
+  <div class="table-wrap">
+    {% if donors %}
+    <table id="dt">
+      <thead><tr><th>Name</th><th>Blood type</th><th>Email</th><th>Phone</th><th>Last donation</th><th>Eligible</th><th>ID</th></tr></thead>
+      <tbody>
+        {% for d in donors %}
+        <tr>
+          <td><strong>{{ d.username }}</strong></td>
+          <td><span class="badge badge-red">{{ d.bloodType|replace('_',' ') }}</span></td>
+          <td>{{ d.email }}</td><td>{{ d.phone }}</td><td>{{ d.lastDonation }}</td>
+          <td>{% if d.isEligible %}<span class="badge badge-green">Yes</span>{% else %}<span class="badge badge-yellow">Cooldown</span>{% endif %}</td>
+          <td style="font-family:monospace;font-size:11px;color:#aaa">{{ d.userId[:12] }}…</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty-state"><div class="icon">🩸</div><p>No donors yet.</p></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

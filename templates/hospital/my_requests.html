@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}My Requests{% endblock %}
+{% block topbar_title %}Blood Requests{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Blood Requests</h1>
+    <p>{% if h_id %}Hospital <strong>{{ h_id }}</strong>{% else %}All hospitals (admin view){% endif %} · {{ requests|length }} total · Sorted by status</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('hospital.new_request') }}" class="btn btn-primary">+ New Request</a>
+    {% for s in statuses %}
+    <a href="{{ url_for('hospital.my_requests', status=s) }}"
+       class="btn btn-sm {% if current_status==s %}btn-secondary{% else %}btn-ghost{% endif %}">{{ s }}</a>
+    {% endfor %}
+    <a href="{{ url_for('hospital.my_requests', status='ALL') }}"
+       class="btn btn-sm {% if current_status=='ALL' %}btn-secondary{% else %}btn-ghost{% endif %}">ALL</a>
+  </div>
+</div>
+
+{% if requests %}
+<!-- Group by status for readability -->
+{% set status_groups = [
+  ('FULFILLED', 'Awaiting Your Verification', 'badge-blue', '⏳'),
+  ('PENDING',   'Pending — Awaiting Blood Bank', 'badge-yellow', '🕐'),
+  ('VERIFIED',  'Verified — Delivery Confirmed', 'badge-green', '✅'),
+  ('REJECTED',  'Rejected', 'badge-red', '❌'),
+  ('ACCEPTED',  'Accepted', 'badge-gray', '—'),
+] %}
+
+{% for status_val, label, badge_class, icon in status_groups %}
+{% set group = requests | selectattr('status', 'equalto', status_val) | list %}
+{% if group %}
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header">
+    <span class="card-title">{{ icon }} {{ label }}</span>
+    <span class="badge {{ badge_class }}">{{ group|length }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Hospital</th><th>Blood type</th><th>Units</th><th>Date</th><th>Urgent</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for r in group %}
+        <tr {% if r.isUrgent %}class="urgent-row"{% endif %}>
+          <td style="font-family:monospace;font-size:12px">{{ r.id }}</td>
+          <td>{{ r.hospitalId }}</td>
+          <td><span class="badge badge-red">{{ r.bloodType|replace('_',' ') }}</span></td>
+          <td>{{ r.quantity }}</td>
+          <td>{{ r.date }}</td>
+          <td>{% if r.isUrgent %}<span class="badge badge-red">🚨</span>{% else %}<span class="badge badge-gray">—</span>{% endif %}</td>
+          <td>
+            {% if r.status == 'FULFILLED' %}
+            <a href="{{ url_for('hospital.verify_request', req_id=r.id) }}" class="btn btn-sm btn-success" onclick="return confirm('Confirm delivery for {{ r.id }}?')">✓ Verify</a>
+            {% elif r.status == 'VERIFIED' %}
+            <span style="color:#065f46;font-size:12px">✓ Done</span>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% else %}
+<div class="card"><div class="empty-state"><div class="icon">📋</div><p>No requests. <a href="{{ url_for('hospital.new_request') }}">Submit one →</a></p></div></div>
+{% endif %}
+{% endblock %}

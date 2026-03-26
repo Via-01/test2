@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Blood Bank Report{% endblock %}
+{% block topbar_title %}Blood Bank Report{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Blood Bank Report</h1>
+    <p>{{ data.report_date }} · {{ data.period }}</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.summary') }}" class="btn btn-ghost">Quick Summary</a>
+    <button onclick="window.print()" class="btn btn-secondary">🖨 Print</button>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card accent"><div class="stat-label">Total stock</div><div class="stat-value">{{ data.total_stock }}</div><div class="stat-sub">Units across all banks</div></div>
+  <div class="stat-card"><div class="stat-label">Total donors</div><div class="stat-value">{{ data.total_donors }}</div></div>
+  <div class="stat-card"><div class="stat-label">Eligible donors</div><div class="stat-value">{{ data.eligible_donors }}</div><div class="stat-sub">Ready to donate</div></div>
+  <div class="stat-card"><div class="stat-label">Donations (30 days)</div><div class="stat-value">{{ data.don_volume | sum(attribute='count') }}</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <div class="card"><div class="card-header"><span class="card-title">Stock by blood type</span></div><div class="card-body"><canvas id="ic" height="220"></canvas></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Donation status (30 days)</span></div><div class="card-body">{% if data.don_status %}<canvas id="dc" height="220"></canvas>{% else %}<div class="empty-state"><p>No donations in 30 days.</p></div>{% endif %}</div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Inventory by blood type</span></div>
+    <div class="table-wrap">{% set tot=data.inv_summary|sum(attribute='total') %}
+    <table><thead><tr><th>Blood type</th><th>Units</th><th>Share</th></tr></thead><tbody>
+    {% for r in data.inv_summary|sort(attribute='total',reverse=True) %}
+    <tr><td><span class="badge badge-red">{{ r.bloodType | replace('_',' ') }}</span></td><td><strong>{{ r.total }}</strong></td>
+    <td>{% if tot>0 %}<div style="display:flex;align-items:center;gap:7px"><div style="flex:1;height:5px;background:#f0f4f8;border-radius:3px"><div style="width:{{ [((r.total/tot*100)|int),100]|min }}%;height:100%;background:var(--red2);border-radius:3px"></div></div><span style="font-size:11px;color:var(--text2)">{{'%.0f'|format(r.total/tot*100)}}%</span></div>{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>
+  </div>
+  <div class="card"><div class="card-header"><span class="card-title">Donation volume by type (30 days)</span></div>
+    <div class="table-wrap">{% if data.don_volume %}
+    <table><thead><tr><th>Blood type</th><th>Donations</th><th>mL collected</th></tr></thead><tbody>
+    {% for r in data.don_volume|sort(attribute='count',reverse=True) %}
+    <tr><td><span class="badge badge-red">{{ r.bloodType | replace('_',' ') }}</span></td><td>{{ r.count }}</td><td>{{ r.qty }}</td></tr>
+    {% endfor %}</tbody></table>
+    {% else %}<div class="empty-state"><p>No donations in 30 days.</p></div>{% endif %}</div>
+  </div>
+</div>
+
+<script>
+const BTC={'O_POSITIVE':'#e74c3c','O_NEGATIVE':'#c0392b','A_POSITIVE':'#e67e22','A_NEGATIVE':'#d35400','B_POSITIVE':'#3498db','B_NEGATIVE':'#2980b9','AB_POSITIVE':'#9b59b6','AB_NEGATIVE':'#8e44ad'};
+const id={{ data.inv_summary|tojson }};
+if(id.length) new Chart(document.getElementById('ic'),{type:'bar',data:{labels:id.map(d=>d.bloodType.replace('_',' ')),datasets:[{label:'Units',data:id.map(d=>d.total),backgroundColor:id.map(d=>BTC[d.bloodType]||'#888'),borderRadius:5,borderSkipped:false}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f0f4f8'}},x:{grid:{display:false}}}}});
+const dd={{ data.don_status|tojson }};
+if(dd.length) new Chart(document.getElementById('dc'),{type:'doughnut',data:{labels:dd.map(d=>d.status),datasets:[{data:dd.map(d=>d.count),backgroundColor:['#2ecc71','#e74c3c','#f39c12'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans'},padding:14}}},cutout:'60%'}});
+</script>
+{% endblock %}

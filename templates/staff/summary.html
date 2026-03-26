@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Quick Summary{% endblock %}
+{% block topbar_title %}Blood Bank — Quick Summary{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Quick Summary</h1>
+    <p>{% if my_unit %}Unit <strong>{{ my_unit }}</strong>{% else %}{% if filter_unit %}Unit <strong>{{ filter_unit }}</strong>{% else %}All Blood Banks{% endif %} (admin view){% endif %}</p>
+  </div>
+  <a href="{{ url_for('staff.report') }}{% if filter_unit %}?unit={{ filter_unit }}{% endif %}" class="btn btn-ghost">Full Report →</a>
+</div>
+
+{% if all_bank_units %}
+<div class="toggle-bar">
+  <span class="toggle-label">Filter unit:</span>
+  <a href="{{ url_for('staff.summary') }}" class="btn btn-sm {% if not filter_unit %}btn-secondary{% else %}btn-ghost{% endif %}">All</a>
+  {% for u in all_bank_units %}
+  <a href="{{ url_for('staff.summary', unit=u) }}" class="btn btn-sm {% if filter_unit==u %}btn-secondary{% else %}btn-ghost{% endif %}">{{ u }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card" style="max-width:700px">
+  <div class="card-header"><span class="card-title">Status — {{ now }}</span></div>
+  <div class="card-body" style="font-size:15px;line-height:2.2">
+    <p><strong>📦 Total stock:</strong> {{ total_stock }} units {% if filter_unit %}in unit {{ filter_unit }}{% else %}across all banks{% endif %}.</p>
+    <p><strong>📋 Pending requests:</strong> {{ pending }} awaiting fulfillment.</p>
+    <p><strong>⏳ Awaiting hospital verification:</strong> {{ fulfilled_waiting }} fulfilled, hospital not yet confirmed.</p>
+    <p><strong>🩸 Donors:</strong> {{ total_donors }} total — <strong>{{ eligible }}</strong> currently eligible.</p>
+    {% if low_stock %}
+    <div class="divider"></div>
+    <p style="color:#991b1b;font-weight:600">⚠ {{ low_stock|length }} inventory record{{ 's' if low_stock|length!=1 }} below minimum:</p>
+    <ul style="margin-left:20px;margin-top:6px">
+      {% for item in low_stock %}
+      <li>{{ item.blood_type.name|replace('_',' ') }} @ <code>{{ item.unitId }}</code> — {{ item.unitsAvailable }} units (min {{ item.minOrderAmt }})</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="divider"></div>
+    <p style="color:#065f46">✓ All inventory levels above minimum thresholds.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

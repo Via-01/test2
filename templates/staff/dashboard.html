@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Blood Bank Dashboard{% endblock %}
+{% block topbar_title %}Blood Bank Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Blood Bank Dashboard</h1>
+    <p>{% if unit_name %}{{ unit_name }} ({{ my_unit }}){% else %}All units (admin){% endif %}</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.record_donation') }}" class="btn btn-primary">+ Donation</a>
+    <a href="{{ url_for('staff.all_requests') }}" class="btn btn-secondary">Manage Requests</a>
+  </div>
+</div>
+<div class="stat-grid">
+  <div class="stat-card accent"><div class="stat-label">Pending</div><div class="stat-value">{{ pending }}</div><div class="stat-sub">Requests awaiting fulfillment</div></div>
+  <div class="stat-card"><div class="stat-label">Urgent pending</div><div class="stat-value" style="color:var(--red)">{{ urgent }}</div></div>
+  <div class="stat-card"><div class="stat-label">Awaiting verification</div><div class="stat-value" style="color:#1e40af">{{ fulfilled_waiting }}</div><div class="stat-sub">Hospital to confirm</div></div>
+  <div class="stat-card"><div class="stat-label">{% if my_unit %}Unit stock{% else %}Total stock{% endif %}</div><div class="stat-value">{{ total_units }}</div></div>
+  <div class="stat-card"><div class="stat-label">Donors</div><div class="stat-value">{{ donor_count }}</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Pending requests</span>
+      <a href="{{ url_for('staff.all_requests') }}" class="btn btn-ghost btn-sm">See all</a>
+    </div>
+    <div class="table-wrap">
+      {% if recent %}
+      <table>
+        <thead><tr><th>ID</th><th>Hospital</th><th>Blood</th><th>Units</th><th>Urgent</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for r in recent %}
+          <tr {% if r.isUrgent %}class="urgent-row"{% endif %}>
+            <td style="font-family:monospace;font-size:12px">{{ r.id }}</td>
+            <td>{{ r.hospitalId }}</td>
+            <td><span class="badge badge-red">{{ r.bloodType|replace('_',' ') }}</span></td>
+            <td>{{ r.quantity }}</td>
+            <td>{% if r.isUrgent %}<span class="badge badge-red">🚨</span>{% else %}—{% endif %}</td>
+            <td>
+              <a href="{{ url_for('staff.handle_fulfill_request', req_id=r.id) }}" class="btn btn-sm btn-success" onclick="return confirm('Fulfil?')">Fulfil</a>
+              <a href="{{ url_for('staff.handle_reject_request', req_id=r.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Reject?')">Reject</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<div class="empty-state"><div class="icon">✅</div><p>No pending requests.</p></div>{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title" id="fhdr">⏳ Awaiting Verification (<span id="fcount">{{ fulfilled_list|length }}</span>)</span>
+      <span id="live-dot" style="font-size:11px;color:#065f46;background:#d1fae5;padding:2px 8px;border-radius:12px">● Live</span>
+    </div>
+    <div class="table-wrap" style="max-height:340px;overflow-y:auto">
+      <table>
+        <thead><tr><th>ID</th><th>Hospital</th><th>Blood</th><th>Units</th><th>Date</th></tr></thead>
+        <tbody id="flist">
+          {% for r in fulfilled_list %}
+          <tr>
+            <td style="font-family:monospace;font-size:12px">{{ r.id }}</td>
+            <td>{{ r.hospitalId }}</td>
+            <td><span class="badge badge-blue">{{ r.bloodType|replace('_',' ') }}</span></td>
+            <td>{{ r.quantity }}</td>
+            <td>{{ r.date }}</td>
+          </tr>
+          {% endfor %}
+          {% if not fulfilled_list %}<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">None waiting</td></tr>{% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function pollFulfilled() {
+  fetch('{{ url_for("staff.api_fulfilled") }}')
+    .then(r => r.json())
+    .then(rows => {
+      document.getElementById('fcount').textContent = rows.length;
+      const body = document.getElementById('flist');
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">None waiting</td></tr>';
+        return;
+      }
+      body.innerHTML = rows.map(r => `<tr>
+        <td style="font-family:monospace;font-size:12px">${r.id}</td>
+        <td>${r.hospitalId}</td>
+        <td><span class="badge badge-blue">${r.bloodType.replace(/_/g,' ')}</span></td>
+        <td>${r.quantity}</td>
+        <td>${r.date}</td>
+      </tr>`).join('');
+    })
+    .catch(() => {
+      document.getElementById('live-dot').textContent = '● Offline';
+      document.getElementById('live-dot').style.background = '#fee2e2';
+      document.getElementById('live-dot').style.color = '#991b1b';
+    });
+}
+setInterval(pollFulfilled, 10000);
+</script>
+{% endblock %}

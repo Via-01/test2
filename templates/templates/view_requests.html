@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Pending Requests</h1>
+    <p>{{ requests | length }} request{{ 's' if requests | length != 1 }} awaiting action.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.new_blood_request_form') }}" class="btn btn-primary">+ New Request</a>
+    <a href="{{ url_for('staff.view_all_requests') }}" class="btn btn-ghost">All history</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    {% if requests %}
+    <table>
+      <thead>
+        <tr>
+          <th>Request ID</th>
+          <th>Hospital</th>
+          <th>Blood type</th>
+          <th>Units</th>
+          <th>Date</th>
+          <th>Urgent</th>
+          {% if session.user_type == 'blood_bank_staff' %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        <tr {% if r.isUrgent == 'Yes' %}class="urgent-row"{% endif %}>
+          <td style="font-family:monospace;font-size:12px;">{{ r.id }}</td>
+          <td>{{ r.hospitalId }}</td>
+          <td><span class="badge badge-red">{{ r.bloodType | replace('_',' ') }}</span></td>
+          <td><strong>{{ r.quantity }}</strong></td>
+          <td>{{ r.date }}</td>
+          <td>
+            {% if r.isUrgent == 'Yes' %}
+              <span class="badge badge-red">🚨 Urgent</span>
+            {% else %}
+              <span class="badge badge-gray">Normal</span>
+            {% endif %}
+          </td>
+          {% if session.user_type == 'blood_bank_staff' %}
+          <td>
+            <div class="actions">
+              <a href="{{ url_for('staff.handle_fulfill_request', req_id=r.id) }}" class="btn btn-sm btn-success"
+                 onclick="return confirm('Attempt to fulfil request {{ r.id }}?')">Fulfil</a>
+              <a href="{{ url_for('staff.match_donor_for_request', request_id=r.id) }}" class="btn btn-sm btn-ghost">Match donor</a>
+              <a href="{{ url_for('staff.handle_reject_request', req_id=r.id) }}" class="btn btn-sm btn-danger"
+                 onclick="return confirm('Reject request {{ r.id }}?')">Reject</a>
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">✅</div>
+      <p>No pending requests — all caught up!</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

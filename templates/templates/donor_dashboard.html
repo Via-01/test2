@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Donor Management</h1>
+    <p>Register new donors and manage eligibility status.</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+
+  <!-- Register new donor -->
+  {% if current_user_type == 'blood_bank_staff' %}
+  <div class="card">
+    <div class="card-header"><span class="card-title">Register New Donor</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('donor.register_donor') }}">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="username">Full name / username</label>
+            <input type="text" id="username" name="username" required placeholder="e.g. Ali Hassan">
+          </div>
+          <div class="form-group">
+            <label for="blood_type">Blood type</label>
+            <select id="blood_type" name="blood_type" required>
+              <option value="">— Select —</option>
+              {% for bt in blood_types %}
+              <option value="{{ bt }}">{{ bt | replace('_',' ') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required placeholder="donor@email.com">
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" required placeholder="+91 98765 43210">
+          </div>
+        </div>
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary">Register Donor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Update health -->
+  <div class="card">
+    <div class="card-header"><span class="card-title">Update Donor Health</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('donor.update_donor_health') }}">
+        <div class="form-grid">
+          <div class="form-group form-full">
+            <label for="donor_id">Donor ID (full UUID)</label>
+            <input type="text" id="donor_id" name="donor_id" required placeholder="Paste full donor ID">
+          </div>
+          <div class="form-group form-full">
+            <label for="last_donation_date">Last donation date</label>
+            <input type="date" id="last_donation_date" name="last_donation_date">
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text2);margin-top:8px;">Eligibility is recalculated automatically based on the 56-day cooldown.</p>
+        <div class="mt-4">
+          <button type="submit" class="btn btn-secondary">Update Status</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="card" style="grid-column:1/-1;">
+    <div class="card-body">
+      <p style="color:var(--text2);">You have view-only access to donor information.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Donor list -->
+<div class="card mt-6">
+  <div class="card-header">
+    <span class="card-title">Donor List</span>
+    <input type="text" id="donorSearch" placeholder="Search…" style="width:200px;padding:7px 12px;font-size:13px;" oninput="filterDonors()">
+  </div>
+  <div class="table-wrap">
+    {% if donors %}
+    <table id="donorTbl">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Blood type</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Last donation</th>
+          <th>Eligible</th>
+          {% if current_user_type == 'blood_bank_staff' %}<th>ID</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in donors %}
+        <tr>
+          <td><strong>{{ d.username }}</strong></td>
+          <td><span class="badge badge-red">{{ d.bloodType | replace('_',' ') }}</span></td>
+          <td>{{ d.email }}</td>
+          <td>{{ d.phone }}</td>
+          <td>{{ d.lastDonation }}</td>
+          <td>
+            {% if d.isEligible %}
+              <span class="badge badge-green">Yes</span>
+            {% else %}
+              <span class="badge badge-yellow">No</span>
+            {% endif %}
+          </td>
+          {% if current_user_type == 'blood_bank_staff' %}
+          <td style="font-family:monospace;font-size:11px;color:#888">{{ d.userId[:12] }}…</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">🩸</div><p>No donors registered yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+<script>
+function filterDonors(){
+  const q=document.getElementById('donorSearch').value.toLowerCase();
+  document.querySelectorAll('#donorTbl tbody tr').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});
+}
+</script>
+{% endblock %}

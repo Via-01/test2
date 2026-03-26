@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Transfer Units{% endblock %}
+{% block topbar_title %}Transfer Blood Units{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Transfer Blood Units</h1>
+    <p>Move stock between blood bank units.</p>
+  </div>
+  <a href="{{ url_for('staff.inventory') }}" class="btn btn-ghost">← Inventory</a>
+</div>
+
+<div style="max-width:560px">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Transfer details</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('staff.transfer_inventory') }}">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Source unit</label>
+            <select name="source_unit" required>
+              <option value="">— Source —</option>
+              {% for u in units %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Destination unit</label>
+            <select name="dest_unit" required>
+              <option value="">— Destination —</option>
+              {% for u in units %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Blood type</label>
+            <select name="blood_type" required>
+              <option value="">— Select —</option>
+              {% for bt in blood_types %}<option value="{{ bt }}">{{ bt | replace('_',' ') }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Units to transfer</label>
+            <input type="number" name="quantity" required min="1" placeholder="e.g. 50">
+          </div>
+        </div>
+        <div class="divider"></div>
+        <button type="submit" class="btn btn-primary" onclick="return confirm('Execute transfer?')">Execute Transfer</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

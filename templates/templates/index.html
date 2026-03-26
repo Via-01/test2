@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Dashboard</h1>
+    <p>Overview of registered donors and system status.</p>
+  </div>
+  <div class="actions">
+    {% if current_user_type == 'blood_bank_staff' %}
+    <a href="{{ url_for('donor.donor_dashboard') }}" class="btn btn-primary">+ Register Donor</a>
+    <a href="{{ url_for('staff.view_requests') }}" class="btn btn-secondary">View Requests</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid">
+  <div class="stat-card accent">
+    <div class="stat-label">Total donors</div>
+    <div class="stat-value">{{ donors | length }}</div>
+    <div class="stat-sub">Registered in system</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Eligible donors</div>
+    <div class="stat-value">{{ donors | selectattr('isEligible','equalto','Eligible') | list | length }}</div>
+    <div class="stat-sub">Ready to donate</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">On cooldown</div>
+    <div class="stat-value">{{ donors | rejectattr('isEligible','equalto','Eligible') | list | length }}</div>
+    <div class="stat-sub">Within 56-day window</div>
+  </div>
+</div>
+
+<!-- Donor table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Donors</span>
+    <input type="text" id="searchInput" placeholder="Search donors…" style="width:220px;padding:7px 12px;font-size:13px;" oninput="filterTable()">
+  </div>
+  <div class="table-wrap">
+    {% if donors %}
+    <table id="donorTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>ID</th>
+          <th>Blood type</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Last donation</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in donors %}
+        <tr>
+          <td><strong>{{ d.username }}</strong></td>
+          <td style="font-family:monospace;font-size:12px;color:#666">{{ d.userId }}</td>
+          <td><span class="badge badge-red">{{ d.bloodType }}</span></td>
+          <td>{{ d.email }}</td>
+          <td>{{ d.phone }}</td>
+          <td>{{ d.lastDonation }}</td>
+          <td>
+            {% if d.isEligible == 'Eligible' %}
+              <span class="badge badge-green">Eligible</span>
+            {% else %}
+              <span class="badge badge-yellow">Cooldown</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">🩸</div>
+      <p>No donors registered yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function filterTable(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('#donorTable tbody tr').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+</script>
+{% endblock %}

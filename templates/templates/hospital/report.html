@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Hospital Report{% endblock %}
+{% block topbar_title %}Hospital Report{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Hospital Report</h1>
+    <p>Generated {{ data.report_date }} · All-time data</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('hospital.summary') }}" class="btn btn-ghost">Quick Summary</a>
+    <button onclick="window.print()" class="btn btn-secondary">🖨 Print</button>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card accent"><div class="stat-label">Total requests</div><div class="stat-value">{{ data.total_requests }}</div></div>
+  <div class="stat-card"><div class="stat-label">Fulfilment rate</div><div class="stat-value">{{ data.fulfillment_rate }}</div><div class="stat-sub">Of closed requests</div></div>
+  {% for u in data.by_urgency %}
+  <div class="stat-card"><div class="stat-label">{{ u.type }} requests</div><div class="stat-value">{{ u.count }}</div></div>
+  {% endfor %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <div class="card"><div class="card-header"><span class="card-title">Requests by status</span></div><div class="card-body"><canvas id="sc" height="220"></canvas></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Most requested blood types</span></div><div class="card-body"><canvas id="bc" height="220"></canvas></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Status breakdown</span></div>
+    <div class="table-wrap">{% if data.by_status %}{% set tot=data.by_status|sum(attribute='count') %}
+    <table><thead><tr><th>Status</th><th>Count</th><th>Share</th></tr></thead><tbody>
+    {% for r in data.by_status|sort(attribute='count',reverse=True) %}
+    {% set bc2={'PENDING':'badge-yellow','FULFILLED':'badge-blue','VERIFIED':'badge-green','REJECTED':'badge-red'}.get(r.status,'badge-gray') %}
+    <tr><td><span class="badge {{bc2}}">{{r.status}}</span></td><td><strong>{{r.count}}</strong></td>
+    <td><div style="display:flex;align-items:center;gap:7px"><div style="flex:1;height:5px;background:#f0f4f8;border-radius:3px"><div style="width:{{ [((r.count/tot*100)|int),100]|min }}%;height:100%;background:#3498db;border-radius:3px"></div></div><span style="font-size:11px;color:var(--text2)">{{'%.0f'|format(r.count/tot*100)}}%</span></div></td></tr>
+    {% endfor %}</tbody></table>{% else %}<div class="empty-state"><p>No data.</p></div>{% endif %}
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="card-title">Fulfilment rate</span></div>
+    <div class="card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:160px;gap:10px">
+      <div style="font-family:'Fraunces',serif;font-size:52px;font-weight:700;color:var(--text)">{{ data.fulfillment_rate }}</div>
+      <p style="color:var(--text2);font-size:13px;text-align:center">of closed requests were fulfilled or verified.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const SC={'PENDING':'#f39c12','FULFILLED':'#3498db','VERIFIED':'#2ecc71','REJECTED':'#e74c3c'};
+const sd={{ data.by_status|tojson }};
+if(sd.length) new Chart(document.getElementById('sc'),{type:'doughnut',data:{labels:sd.map(d=>d.status),datasets:[{data:sd.map(d=>d.count),backgroundColor:sd.map(d=>SC[d.status]||'#888'),borderWidth:0,hoverOffset:4}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'DM Sans'},padding:14}}},cutout:'60%'}});
+const bd={{ data.by_blood|tojson }};
+if(bd.length) new Chart(document.getElementById('bc'),{type:'bar',data:{labels:bd.map(d=>d.blood_type.replace('_',' ')),datasets:[{label:'Requests',data:bd.map(d=>d.count),backgroundColor:'#3498db',borderRadius:5,borderSkipped:false}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f0f4f8'}},x:{grid:{display:false}}}}});
+</script>
+{% endblock %}

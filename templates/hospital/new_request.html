@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}New Request{% endblock %}
+{% block topbar_title %}Submit Blood Request{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>New Blood Request</h1>
+    <p>Submit a request — pick from recommended blood banks ranked by proximity and stock.</p>
+  </div>
+  <a href="{{ url_for('hospital.my_requests') }}" class="btn btn-ghost">← My requests</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Request details</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('hospital.new_request') }}" id="reqForm">
+        <div class="form-grid">
+          {% if not h_id %}
+          <div class="form-group form-full">
+            <label>Hospital unit</label>
+            <select name="hospital_id" required>
+              <option value="">— Select hospital —</option>
+              {% for h in hospitals %}<option value="{{ h.unitId }}">{{ h.name }} ({{ h.unitId }})</option>{% endfor %}
+            </select>
+          </div>
+          {% else %}
+          <input type="hidden" name="hospital_id" value="{{ h_id }}">
+          <div class="form-group form-full">
+            <label>Your hospital</label>
+            <input type="text" value="{{ hospitals[0].name if hospitals else h_id }} ({{ h_id }})" disabled style="background:#f8fafc;color:var(--text2)">
+          </div>
+          {% endif %}
+          <div class="form-group">
+            <label>Blood type needed</label>
+            <select name="blood_type" required id="btSelect" onchange="clearRec()">
+              <option value="">— Select —</option>
+              {% for bt in blood_types %}<option value="{{ bt }}">{{ bt|replace('_',' ') }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Units required</label>
+            <input type="number" name="quantity" required min="1" placeholder="e.g. 2" id="qtyInput" oninput="clearRec()">
+          </div>
+          <div class="form-group form-full">
+            <label>Patient / reference ID</label>
+            <input type="text" name="requested_id" placeholder="PATIENT_N/A">
+          </div>
+          <div class="form-group form-full">
+            <label>Target blood bank <span style="font-weight:400;text-transform:none;font-size:11px">(optional — select from recommendations →)</span></label>
+            <select name="target_bank_id" id="bankSelect">
+              <option value="">— Let system choose best available —</option>
+              {% if recommendations %}
+              {% for rec in recommendations %}
+              <option value="{{ rec.unitId }}" {% if loop.first %}selected{% endif %}>
+                {{ rec.name }} ({{ rec.unitId }}) — {{ rec.total_units }} units · {{ rec.distance }}
+              </option>
+              {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+          <div class="form-group form-full">
+            <div class="checkbox-row">
+              <input type="checkbox" id="is_urgent" name="is_urgent">
+              <label for="is_urgent">Mark as urgent (priority handling)</label>
+            </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="actions">
+          <button type="button" class="btn btn-ghost" onclick="fetchRecs()">🔍 Get Recommendations</button>
+          <button type="submit" class="btn btn-primary">Submit Request →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Top 3 Blood Bank Recommendations</span>
+    </div>
+    <div class="card-body" id="recPanel">
+      {% if submitted and recommendations %}
+      {% for rec in recommendations %}
+      <div style="border:1px solid {% if loop.first %}#93c5fd{% else %}#e2e8f0{% endif %};border-radius:8px;padding:14px;margin-bottom:12px;background:{% if loop.first %}#eff6ff{% else %}#fff{% endif %}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div>
+            <div style="font-weight:700;font-size:15px">{{ loop.index }}. {{ rec.name }}</div>
+            <div style="font-size:12px;color:var(--text2);font-family:monospace">{{ rec.unitId }}</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-purple"
+            onclick="document.getElementById('bankSelect').value='{{ rec.unitId }}'">Select</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <span class="badge {% if rec.exact_match %}badge-green{% else %}badge-blue{% endif %}">
+            {% if rec.exact_match %}Exact match{% else %}Compatible{% endif %}
+          </span>
+          <span class="badge {% if rec.has_enough %}badge-green{% else %}badge-yellow{% endif %}">
+            {{ rec.total_units }} units {% if rec.has_enough %}✓{% else %}(partial){% endif %}
+          </span>
+          <span class="badge badge-gray">📍 {{ rec.distance }}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Blood types: {{ rec.blood_types }}</div>
+      </div>
+      {% endfor %}
+      {% elif submitted %}
+      <div class="empty-state"><div class="icon">📭</div><p>No compatible stock found.</p></div>
+      {% else %}
+      <div class="empty-state"><div class="icon">🔍</div>
+        <p style="margin-bottom:12px">Click <strong>Get Recommendations</strong> to see the top 3 nearest blood banks with available stock, or submit directly.</p>
+        <p style="font-size:12px;color:var(--text2)">Ranked by: exact type match → sufficient quantity → distance → stock level</p>
+      </div>
+      {% endif %}
+      {% if last_req_id %}
+      <div style="margin-top:14px;background:#d1fae5;border:1px solid #a7f3d0;border-radius:8px;padding:12px;font-size:13px;color:#065f46">
+        ✓ Request <strong>{{ last_req_id }}</strong> submitted successfully.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function clearRec() {
+  // Don't wipe recommendations on field change — let user see them while filling form
+}
+
+function fetchRecs() {
+  const bt  = document.getElementById('btSelect').value;
+  const qty = document.getElementById('qtyInput').value;
+  if (!bt || !qty) { alert('Select a blood type and enter quantity first.'); return; }
+  const panel = document.getElementById('recPanel');
+  panel.innerHTML = '<div class="empty-state"><p>Loading recommendations…</p></div>';
+
+  const fd = new FormData(document.getElementById('reqForm'));
+  fd.append('_rec_only', '1');  // not used server-side, just triggers GET redirect
+
+  // Use GET with query params to fetch recommendations via the same POST route preview
+  // Since we need server-side distance calc, submit the form with a preview flag isn't
+  // wired up — instead direct users to just submit, or show a loading state then submit.
+  // For UX: clicking "Get Recommendations" submits the form normally; result appears on right.
+  document.getElementById('reqForm').submit();
+}
+</script>
+{% endblock %}

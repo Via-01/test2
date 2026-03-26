@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Hospital Summary{% endblock %}
+{% block topbar_title %}Hospital — Quick Summary{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Quick Summary</h1>
+    <p><strong>{{ hosp_label }}</strong>{% if not h_id %} (admin view){% endif %}</p>
+  </div>
+  <a href="{{ url_for('hospital.report') }}{% if filter_hosp %}?hospital={{ filter_hosp }}{% endif %}" class="btn btn-ghost">Full Report →</a>
+</div>
+
+{% if all_hospitals %}
+<div class="toggle-bar">
+  <span class="toggle-label">Filter hospital:</span>
+  <a href="{{ url_for('hospital.summary') }}" class="btn btn-sm {% if not filter_hosp %}btn-secondary{% else %}btn-ghost{% endif %}">All</a>
+  {% for hid in all_hospitals %}
+  <a href="{{ url_for('hospital.summary', hospital=hid) }}" class="btn btn-sm {% if filter_hosp==hid %}btn-secondary{% else %}btn-ghost{% endif %}">{{ hid }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card" style="max-width:640px">
+  <div class="card-header"><span class="card-title">Request Status — {{ hosp_label }}</span></div>
+  <div class="card-body" style="font-size:15px;line-height:2.2">
+    <p><strong>📋 Total requests:</strong> {{ total }}</p>
+    <p><strong>⏳ Pending:</strong> {{ pending }} awaiting blood bank.</p>
+    <p><strong>📦 Fulfilled — awaiting verification:</strong> {{ fulfilled }}{% if fulfilled > 0 %} · <a href="{{ url_for('hospital.my_requests', status='FULFILLED') }}">Verify now →</a>{% endif %}</p>
+    <p><strong>✅ Verified:</strong> {{ verified }} confirmed.</p>
+    <p><strong>❌ Rejected:</strong> {{ rejected }}</p>
+    {% if fulfilled > 0 %}
+    <div class="divider"></div>
+    <p style="color:#1e40af;font-weight:600">⏳ {{ fulfilled }} request{{ 's' if fulfilled!=1 }} need{{ '' if fulfilled!=1 else 's' }} verification.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

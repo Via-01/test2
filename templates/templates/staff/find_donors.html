@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Find Donors{% endblock %}
+{% block topbar_title %}Eligible Donor Search{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Eligible Donors</h1>
+    <p>Request {{ req.id }} · {{ req.bloodType | replace('_',' ') }} · {{ req.quantity }} units needed</p>
+  </div>
+  <a href="{{ url_for('staff.all_requests') }}" class="btn btn-ghost">← Requests</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">{{ donors|length }} eligible donor{{ 's' if donors|length!=1 }} found</span>
+  </div>
+  <div class="table-wrap">
+    {% if donors %}
+    <table>
+      <thead><tr><th>Name</th><th>Blood type</th><th>Match</th><th>Phone</th><th>Email</th></tr></thead>
+      <tbody>
+        {% for d in donors %}
+        <tr>
+          <td><strong>{{ d.username }}</strong><br><span style="font-size:11px;font-family:monospace;color:#aaa">{{ d.userId }}</span></td>
+          <td><span class="badge badge-red">{{ d.blood_type | replace('_',' ') }}</span></td>
+          <td>{% if d.compatible %}<span class="badge badge-green">Exact</span>{% else %}<span class="badge badge-blue">Compatible</span>{% endif %}</td>
+          <td>{{ d.phone }}</td>
+          <td>{{ d.email }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">😔</div><p>No eligible donors found for this blood type.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

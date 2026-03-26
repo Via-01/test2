@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}All Requests{% endblock %}
+{% block topbar_title %}Blood Requests{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Blood Requests</h1>
+    <p>Manage fulfillment and rejection of hospital blood requests.</p>
+  </div>
+  <div class="actions">
+    {% for s in statuses %}
+    <a href="{{ url_for('staff.all_requests', status=s) }}"
+       class="btn btn-sm {% if current_status==s %}btn-secondary{% else %}btn-ghost{% endif %}">{{ s }}</a>
+    {% endfor %}
+    <a href="{{ url_for('staff.all_requests', status='ALL') }}"
+       class="btn btn-sm {% if current_status=='ALL' %}btn-secondary{% else %}btn-ghost{% endif %}">ALL</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">{{ requests|length }} request{{ 's' if requests|length!=1 }}</span>
+    <input type="text" placeholder="Search…" style="width:200px;padding:7px 12px;font-size:13px;"
+           oninput="document.querySelectorAll('#rt tbody tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(this.value.toLowerCase())?'':'none')">
+  </div>
+  <div class="table-wrap">
+    {% if requests %}
+    <table id="rt">
+      <thead>
+        <tr><th>ID</th><th>Hospital</th><th>Blood type</th><th>Units</th><th>Date</th><th>Urgent</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        {% set sc={'PENDING':'badge-yellow','FULFILLED':'badge-blue','VERIFIED':'badge-green','REJECTED':'badge-red','ACCEPTED':'badge-gray'}.get(r.status,'badge-gray') %}
+        <tr {% if r.isUrgent %}class="urgent-row"{% endif %}>
+          <td style="font-family:monospace;font-size:12px">{{ r.id }}</td>
+          <td>{{ r.hospitalId }}</td>
+          <td><span class="badge badge-red">{{ r.bloodType | replace('_',' ') }}</span></td>
+          <td>{{ r.quantity }}</td>
+          <td>{{ r.date }}</td>
+          <td>{% if r.isUrgent %}<span class="badge badge-red">🚨</span>{% else %}<span class="badge badge-gray">—</span>{% endif %}</td>
+          <td><span class="badge {{ sc }}">{{ r.status }}</span></td>
+          <td>
+            <div class="actions">
+              {% if r.status == 'PENDING' %}
+              <a href="{{ url_for('staff.handle_fulfill_request', req_id=r.id) }}" class="btn btn-sm btn-success" onclick="return confirm('Fulfil {{ r.id }}?')">Fulfil</a>
+              <a href="{{ url_for('staff.find_donors_for_request', req_id=r.id) }}" class="btn btn-sm btn-ghost">Find donors</a>
+              <a href="{{ url_for('staff.handle_reject_request', req_id=r.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Reject?')">Reject</a>
+              {% else %}
+              <span style="color:#bbb;font-size:12px">—</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">✅</div><p>No requests for this filter.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

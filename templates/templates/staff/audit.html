@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block topbar_title %}Audit Log{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Audit Log</h1>
+    <p>Last {{ logs|length }} system actions across all users.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">{{ logs|length }} entries</span>
+    <input type="text" placeholder="Search…" style="width:200px;padding:7px 12px;font-size:13px;"
+           oninput="document.querySelectorAll('#al tbody tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(this.value.toLowerCase())?'':'none')">
+  </div>
+  <div class="table-wrap">
+    {% if logs %}
+    <table id="al">
+      <thead><tr><th>Date</th><th>User</th><th>Role</th><th>Action</th><th>Details</th></tr></thead>
+      <tbody>
+        {% for l in logs %}
+        {% set ac={'CREATE':'badge-green','UPDATE':'badge-blue','DELETE':'badge-red','LOGIN':'badge-purple','LOGOUT':'badge-gray','FULFILL':'badge-blue','VERIFY':'badge-green','REJECT':'badge-red'}.get(l.action,'badge-gray') %}
+        <tr>
+          <td style="white-space:nowrap">{{ l.date }}</td>
+          <td><strong>{{ l.username }}</strong></td>
+          <td><span class="badge badge-gray" style="font-size:9px">{{ l.user_type | replace('_',' ') if l.user_type else '—' }}</span></td>
+          <td><span class="badge {{ ac }}">{{ l.action }}</span></td>
+          <td style="font-size:12px;color:var(--text2)">{{ l.details }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">📜</div><p>No audit entries yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Blood Stock{% endblock %}
+{% block topbar_title %}Blood Stock Availability{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Blood Stock Availability</h1>
+    <p>Current units available across all blood bank units.</p>
+  </div>
+  <a href="{{ url_for('hospital.new_request') }}" class="btn btn-primary">+ New Request</a>
+</div>
+
+<div class="stat-grid">
+  {% for item in inventory %}
+  <div class="stat-card {% if item.unitsAvailable < 20 %}accent{% endif %}">
+    <div class="stat-label">{{ item.bloodType | replace('_',' ') }}</div>
+    <div class="stat-value" style="{% if item.unitsAvailable < 20 %}color:var(--red){% endif %}">{{ item.unitsAvailable }}</div>
+    <div class="stat-sub">
+      {% if item.unitsAvailable == 0 %}<span style="color:var(--red)">Out of stock</span>
+      {% elif item.unitsAvailable < 20 %}<span style="color:var(--red)">Low stock</span>
+      {% else %}Available{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header"><span class="card-title">Detail view</span></div>
+  <div class="table-wrap">
+    {% if inventory %}
+    <table>
+      <thead><tr><th>Blood type</th><th>Units available</th><th>Last updated</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in inventory %}
+        <tr>
+          <td><span class="badge badge-red">{{ item.bloodType | replace('_',' ') }}</span></td>
+          <td><strong>{{ item.unitsAvailable }}</strong></td>
+          <td>{{ item.lastUpdated }}</td>
+          <td>
+            {% if item.unitsAvailable == 0 %}<span class="badge badge-red">Out of stock</span>
+            {% elif item.unitsAvailable < 20 %}<span class="badge badge-yellow">Low</span>
+            {% else %}<span class="badge badge-green">Available</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">📦</div><p>No inventory data available.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

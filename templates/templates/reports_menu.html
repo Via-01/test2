@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Analytics & Reports</h1>
+    <p>Generate performance and usage reports for the blood bank system.</p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:800px;">
+  <a href="{{ url_for('report.blood_bank_report') }}" style="text-decoration:none;">
+    <div class="card" style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div class="card-body">
+        <div style="font-size:36px;margin-bottom:14px;">🏦</div>
+        <div class="card-title" style="font-size:18px;margin-bottom:8px;">Blood Bank Report</div>
+        <p style="color:var(--text2);font-size:14px;line-height:1.6;">
+          Inventory summary, donation volume over the last 30 days, and donation status breakdown.
+        </p>
+        <div style="margin-top:16px;">
+          <span class="badge badge-blue">Inventory</span>
+          <span class="badge badge-green" style="margin-left:6px;">Donations</span>
+        </div>
+      </div>
+    </div>
+  </a>
+
+  <a href="{{ url_for('report.hospital_report') }}" style="text-decoration:none;">
+    <div class="card" style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div class="card-body">
+        <div style="font-size:36px;margin-bottom:14px;">🏥</div>
+        <div class="card-title" style="font-size:18px;margin-bottom:8px;">Hospital Request Report</div>
+        <p style="color:var(--text2);font-size:14px;line-height:1.6;">
+          Request volume by status, fulfilment rate, and urgency breakdown across all hospitals.
+        </p>
+        <div style="margin-top:16px;">
+          <span class="badge badge-yellow">Requests</span>
+          <span class="badge badge-green" style="margin-left:6px;">Fulfilment rate</span>
+        </div>
+      </div>
+    </div>
+  </a>
+</div>
+{% endblock %}

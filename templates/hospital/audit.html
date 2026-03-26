@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Hospital Audit Log{% endblock %}
+{% block topbar_title %}Hospital Audit Log{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Hospital Audit Log</h1>
+    <p>{% if h_id %}Hospital <strong>{{ h_id }}</strong>{% else %}{% if filter_hosp %}Hospital {{ filter_hosp }}{% else %}All hospitals{% endif %} (admin view){% endif %} · Updates every 15s</p>
+  </div>
+  <span id="live-badge" style="font-size:12px;color:#065f46;background:#d1fae5;padding:3px 10px;border-radius:20px">● Live</span>
+</div>
+
+{% if all_hospitals %}
+<div class="toggle-bar">
+  <span class="toggle-label">Filter hospital:</span>
+  <a href="{{ url_for('hospital.audit_log') }}" class="btn btn-sm {% if not filter_hosp %}btn-secondary{% else %}btn-ghost{% endif %}">All</a>
+  {% for hid in all_hospitals %}
+  <a href="{{ url_for('hospital.audit_log', hospital=hid) }}" class="btn btn-sm {% if filter_hosp==hid %}btn-secondary{% else %}btn-ghost{% endif %}">{{ hid }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><span id="log-count">{{ logs|length }}</span> entries</span>
+    <input type="text" id="ls" placeholder="Search…" style="width:200px;padding:7px 12px;font-size:13px;" oninput="filterLogs(this.value)">
+  </div>
+  <div class="table-wrap">
+    <table><thead><tr><th>Time</th><th>User</th><th>Hospital</th><th>Action</th><th>Details</th></tr></thead>
+    <tbody id="log-body">
+      {% for l in logs %}
+      {% set ac={'CREATE':'badge-green','UPDATE':'badge-blue','DELETE':'badge-red','FULFILL':'badge-blue','VERIFY':'badge-green','REJECT':'badge-red','LOGIN':'badge-purple','LOGOUT':'badge-gray'}.get(l.action,'badge-gray') %}
+      <tr>
+        <td style="white-space:nowrap;font-size:12px">{{ l.date }}</td>
+        <td><strong>{{ l.username }}</strong></td>
+        <td style="font-size:11px;font-family:monospace">{{ l.scope_id }}</td>
+        <td><span class="badge {{ ac }}">{{ l.action }}</span></td>
+        <td style="font-size:12px;color:var(--text2)">{{ l.details }}</td>
+      </tr>
+      {% endfor %}
+    </tbody></table>
+  </div>
+</div>
+<script>
+const HOSP_FILTER = "{{ filter_hosp or '' }}";
+const API_URL = '{{ url_for("hospital.api_audit") }}' + (HOSP_FILTER ? '?hospital=' + HOSP_FILTER : '');
+const AC = {CREATE:'badge-green',UPDATE:'badge-blue',DELETE:'badge-red',LOGIN:'badge-purple',LOGOUT:'badge-gray',FULFILL:'badge-blue',VERIFY:'badge-green',REJECT:'badge-red'};
+function filterLogs(q){q=q.toLowerCase();document.querySelectorAll('#log-body tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(q)?'':'none');}
+function renderRow(l){const badge=AC[l.action]||'badge-gray';return `<tr><td style="white-space:nowrap;font-size:12px">${l.date}</td><td><strong>${l.username}</strong></td><td style="font-size:11px;font-family:monospace">${l.scope_id||'—'}</td><td><span class="badge ${badge}">${l.action}</span></td><td style="font-size:12px;color:var(--text2)">${l.details||''}</td></tr>`;}
+function pollLogs(){fetch(API_URL).then(r=>r.json()).then(rows=>{document.getElementById('log-body').innerHTML=rows.map(renderRow).join('');document.getElementById('log-count').textContent=rows.length;const q=document.getElementById('ls').value;if(q)filterLogs(q);}).catch(()=>{const b=document.getElementById('live-badge');b.textContent='● Offline';b.style.background='#fee2e2';b.style.color='#991b1b';});}
+setInterval(pollLogs,15000);
+</script>
+{% endblock %}

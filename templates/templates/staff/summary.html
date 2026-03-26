@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Quick Summary{% endblock %}
+{% block topbar_title %}Blood Bank — Quick Summary{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Quick Summary</h1>
+    <p>At-a-glance text overview of current system status.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.report') }}" class="btn btn-ghost">Full Report →</a>
+  </div>
+</div>
+
+<div class="card" style="max-width:680px">
+  <div class="card-header"><span class="card-title">System Status — {{ now }}</span></div>
+  <div class="card-body" style="font-size:15px;line-height:2">
+
+    <p><strong>📦 Total blood stock:</strong> {{ total_stock }} units currently available across all blood bank units.</p>
+    <p><strong>📋 Pending requests:</strong> {{ pending }} request{{ 's' if pending!=1 }} awaiting fulfillment from hospitals.</p>
+    <p><strong>⏳ Awaiting hospital verification:</strong> {{ fulfilled_waiting }} fulfilled request{{ 's' if fulfilled_waiting!=1 }} where the hospital has not yet confirmed delivery.</p>
+    <p><strong>🩸 Registered donors:</strong> {{ total_donors }} total — <strong>{{ eligible }}</strong> currently eligible to donate.</p>
+
+    {% if low_stock %}
+    <div class="divider"></div>
+    <p style="color:#991b1b;font-weight:600">⚠ Low-stock alert — {{ low_stock|length }} inventory record{{ 's' if low_stock|length!=1 }} below minimum order amount:</p>
+    <ul style="margin-left:20px;margin-top:8px">
+      {% for item in low_stock %}
+      <li>{{ item.blood_type.name | replace('_',' ') }} at unit <code>{{ item.unitId }}</code> — {{ item.unitsAvailable }} units (min: {{ item.minOrderAmt }})</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="divider"></div>
+    <p style="color:#065f46">✓ All inventory levels are above minimum order thresholds.</p>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

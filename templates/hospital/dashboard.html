@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Hospital Dashboard{% endblock %}
+{% block topbar_title %}Hospital Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Hospital Dashboard</h1>
+    <p>{% if hosp_name %}{{ hosp_name }} ({{ h_id }}){% else %}All hospitals (admin view){% endif %}</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('hospital.new_request') }}" class="btn btn-primary">+ New Request</a>
+    <a href="{{ url_for('hospital.my_requests') }}" class="btn btn-ghost">My Requests</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card accent"><div class="stat-label">Pending</div><div class="stat-value">{{ pending }}</div><div class="stat-sub">Awaiting blood bank</div></div>
+  <div class="stat-card"><div class="stat-label">Fulfilled</div><div class="stat-value" style="color:#1e40af">{{ fulfilled }}</div><div class="stat-sub">Ready to verify</div></div>
+  <div class="stat-card"><div class="stat-label">Verified</div><div class="stat-value" style="color:#065f46">{{ verified }}</div></div>
+  <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value" style="color:#991b1b">{{ rejected }}</div></div>
+</div>
+
+{% if fulfilled > 0 %}
+<div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;font-size:14px;color:#1e40af">
+  <strong>⏳ Action needed:</strong> {{ fulfilled }} fulfilled request{{ 's' if fulfilled!=1 }} awaiting your delivery confirmation.
+  <a href="{{ url_for('hospital.my_requests', status='FULFILLED') }}" style="color:#1d4ed8;font-weight:600;margin-left:8px">Verify now →</a>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Recent requests — sorted by status</span>
+    <a href="{{ url_for('hospital.my_requests') }}" class="btn btn-ghost btn-sm">View all</a>
+  </div>
+  <div class="table-wrap">
+    {% if recent %}
+    <table>
+      <thead><tr><th>ID</th><th>Blood type</th><th>Units</th><th>Date</th><th>Urgent</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for r in recent %}
+        {% set sc={'PENDING':'badge-yellow','FULFILLED':'badge-blue','VERIFIED':'badge-green','REJECTED':'badge-red','ACCEPTED':'badge-gray'}.get(r.status,'badge-gray') %}
+        <tr {% if r.isUrgent %}class="urgent-row"{% endif %}>
+          <td style="font-family:monospace;font-size:12px">{{ r.id }}</td>
+          <td><span class="badge badge-red">{{ r.bloodType|replace('_',' ') }}</span></td>
+          <td>{{ r.quantity }}</td><td>{{ r.date }}</td>
+          <td>{% if r.isUrgent %}<span class="badge badge-red">🚨</span>{% else %}<span class="badge badge-gray">—</span>{% endif %}</td>
+          <td><span class="badge {{ sc }}">{{ r.status }}</span></td>
+          <td>
+            {% if r.status == 'FULFILLED' %}
+            <a href="{{ url_for('hospital.verify_request', req_id=r.id) }}" class="btn btn-sm btn-success" onclick="return confirm('Confirm delivery?')">✓ Verify</a>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">📋</div><p>No requests yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

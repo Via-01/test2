@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Inventory{% endblock %}
+{% block topbar_title %}Blood Inventory{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Inventory Management</h1>
+    <p>View, adjust, and transfer blood stock.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.transfer_inventory') }}" class="btn btn-primary">Transfer Units</a>
+  </div>
+</div>
+
+<!-- Fulfilled awaiting verification -->
+{% if fulfilled_pending %}
+<div class="card" style="margin-bottom:24px;border-left:4px solid #1e40af">
+  <div class="card-header">
+    <span class="card-title" style="color:#1e40af">⏳ Awaiting Hospital Verification ({{ fulfilled_pending|length }})</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Request ID</th><th>Hospital</th><th>Blood type</th><th>Units dispatched</th><th>Date</th></tr></thead>
+      <tbody>
+        {% for r in fulfilled_pending %}
+        <tr>
+          <td style="font-family:monospace;font-size:12px">{{ r.requestId }}</td>
+          <td>{{ r.hospitalId }}</td>
+          <td><span class="badge badge-red">{{ r.blood_type.name | replace('_',' ') }}</span></td>
+          <td><strong>{{ r.quantity }}</strong></td>
+          <td>{{ r.requestDate.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Inventory table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Current stock</span>
+    <input type="text" placeholder="Search…" style="width:180px;padding:7px 12px;font-size:13px;"
+           oninput="document.querySelectorAll('#it tbody tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(this.value.toLowerCase())?'':'none')">
+  </div>
+  <div class="table-wrap">
+    {% if inventory %}
+    <table id="it">
+      <thead><tr><th>Blood type</th><th>Unit ID</th><th>Available</th><th>Min order</th><th>Status</th><th>Last updated</th><th>Adjust</th></tr></thead>
+      <tbody>
+        {% for item in inventory %}
+        <tr>
+          <td><span class="badge badge-red">{{ item.bloodType | replace('_',' ') }}</span></td>
+          <td style="font-family:monospace;font-size:12px">{{ item.unitId }}</td>
+          <td><strong>{{ item.unitsAvailable }}</strong></td>
+          <td>{{ item.minOrderAmt }}</td>
+          <td>
+            {% if item.unitsAvailable == 0 %}<span class="badge badge-red">Empty</span>
+            {% elif item.unitsAvailable < item.minOrderAmt %}<span class="badge badge-yellow">Low</span>
+            {% else %}<span class="badge badge-green">OK</span>{% endif %}
+          </td>
+          <td>{{ item.lastUpdated }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('staff.update_inventory') }}" style="display:flex;gap:6px;align-items:center">
+              <input type="hidden" name="inventory_id" value="{{ item.inventoryId }}">
+              <input type="number" name="delta" placeholder="±qty" style="width:80px;padding:5px 8px;font-size:12px">
+              <button type="submit" class="btn btn-sm btn-ghost">Apply</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">📦</div><p>No inventory records yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

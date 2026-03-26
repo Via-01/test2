@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Transfer Blood Units</h1>
+    <p>Move stock between blood bank units. Source unit must have sufficient stock.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('inventory.view_inventory_stock') }}" class="btn btn-ghost">← Inventory</a>
+  </div>
+</div>
+
+<div style="max-width:580px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Transfer details</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('inventory.execute_transfer') }}">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="source_unit">Source unit</label>
+            <select id="source_unit" name="source_unit" required>
+              <option value="">— Select source —</option>
+              {% for uid in unit_ids %}
+              <option value="{{ uid }}">{{ uid }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="dest_unit">Destination unit</label>
+            <select id="dest_unit" name="dest_unit" required>
+              <option value="">— Select destination —</option>
+              {% for uid in unit_ids %}
+              <option value="{{ uid }}">{{ uid }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="blood_type">Blood type</label>
+            <select id="blood_type" name="blood_type" required>
+              <option value="">— Select —</option>
+              {% for bt in blood_types %}
+              <option value="{{ bt }}">{{ bt | replace('_',' ') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="quantity">Units to transfer</label>
+            <input type="number" id="quantity" name="quantity" required min="1" placeholder="e.g. 50">
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary"
+            onclick="return confirm('Confirm transfer?')">Execute Transfer</button>
+          <a href="{{ url_for('inventory.view_inventory_stock') }}" class="btn btn-ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

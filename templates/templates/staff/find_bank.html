@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Find Blood Bank{% endblock %}
+{% block topbar_title %}Nearby Blood Banks with Stock{% endblock %}
+{% block sidebar %}<div class="nav-sec">Overview</div>
+<a href="{{ url_for('staff.dashboard') }}" class="nav-a {% if request.endpoint=='staff.dashboard' %}active{% endif %}"><span class="nav-icon">🏠</span>Dashboard</a>
+<div class="nav-sec">Requests</div>
+<a href="{{ url_for('staff.all_requests') }}" class="nav-a {% if request.endpoint=='staff.all_requests' %}active{% endif %}"><span class="nav-icon">📋</span>All Requests</a>
+<a href="{{ url_for('staff.record_donation') }}" class="nav-a {% if request.endpoint=='staff.record_donation' %}active{% endif %}"><span class="nav-icon">💉</span>Record Donation</a>
+<div class="nav-sec">Inventory</div>
+<a href="{{ url_for('staff.inventory') }}" class="nav-a {% if 'inventory' in (request.endpoint or '') %}active{% endif %}"><span class="nav-icon">📦</span>Inventory</a>
+<a href="{{ url_for('staff.transfer_inventory') }}" class="nav-a {% if request.endpoint=='staff.transfer_inventory' %}active{% endif %}"><span class="nav-icon">🔄</span>Transfer Units</a>
+<div class="nav-sec">Donors</div>
+<a href="{{ url_for('staff.donor_list') }}" class="nav-a {% if request.endpoint=='staff.donor_list' %}active{% endif %}"><span class="nav-icon">🩸</span>Donor List</a>
+<div class="nav-sec">Reports & Logs</div>
+<a href="{{ url_for('staff.report') }}" class="nav-a {% if request.endpoint=='staff.report' %}active{% endif %}"><span class="nav-icon">📊</span>Blood Bank Report</a>
+<a href="{{ url_for('staff.audit_log') }}" class="nav-a {% if request.endpoint=='staff.audit_log' %}active{% endif %}"><span class="nav-icon">📜</span>Audit Log</a>{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="ph-text"><h1>Blood Banks with Stock</h1><p>Request {{ req.id }} · {{ req.bloodType.replace('_',' ') }} · {{ req.quantity }} units needed</p></div>
+  <a href="{{ url_for('staff.all_requests') }}" class="btn btn-ghost">← Requests</a>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title">{{ banks|length }} location{{ 's' if banks|length!=1 }} found</span></div>
+  <div class="table-wrap">{% if banks %}
+  <table>
+    <thead><tr><th>Unit ID</th><th>Name</th><th>Blood type</th><th>Units available</th><th>Match</th><th>Contact</th></tr></thead>
+    <tbody>{% for b in banks %}
+    <tr>
+      <td style="font-family:monospace;font-size:11px">{{ b.unitId }}</td>
+      <td><strong>{{ b.name }}</strong></td>
+      <td><span class="badge badge-red">{{ b.blood_type.replace('_',' ') }}</span></td>
+      <td><strong>{{ b.available }}</strong></td>
+      <td>{% if b.exact %}<span class="badge badge-green">Exact</span>{% else %}<span class="badge badge-blue">Compatible</span>{% endif %}</td>
+      <td>{{ b.contact }}</td>
+    </tr>{% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty"><div class="icon">🏦</div><p>No blood banks with compatible stock found.</p></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Record New Donation</h1>
+    <p>Log a completed or screened donation and update inventory automatically.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('main.home_dashboard') }}" class="btn btn-ghost">← Back</a>
+  </div>
+</div>
+
+<div style="max-width:640px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Donation details</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('staff.record_donation') }}">
+        <div class="form-grid">
+          <div class="form-group form-full">
+            <label for="donor_id">Donor ID (first characters accepted)</label>
+            <input type="text" id="donor_id" name="donor_id" required placeholder="Paste donor UUID or prefix">
+          </div>
+          <div class="form-group">
+            <label for="blood_type">Blood type</label>
+            <select id="blood_type" name="blood_type" required>
+              <option value="">— Select —</option>
+              {% for bt in blood_types %}
+              <option value="{{ bt }}">{{ bt | replace('_',' ') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="quantity">Quantity (mL)</label>
+            <input type="number" id="quantity" name="quantity" required min="1" max="500" placeholder="e.g. 450">
+          </div>
+          <div class="form-group">
+            <label for="status">Donation status</label>
+            <select id="status" name="status" required>
+              <option value="">— Select —</option>
+              {% for ds in donation_statuses %}
+              <option value="{{ ds }}">{{ ds | replace('_',' ') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="unit_id">Blood bank unit ID</label>
+            <input type="text" id="unit_id" name="unit_id" value="BBU001" placeholder="BBU001">
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Record Donation</button>
+          <a href="{{ url_for('main.home_dashboard') }}" class="btn btn-ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <p style="margin-top:14px;font-size:13px;color:var(--text2);">
+    ℹ When status is set to <strong>COMPLETE</strong>, inventory is updated and the donor enters the 56-day cooldown automatically.
+  </p>
+</div>
+{% endblock %}

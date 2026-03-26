@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Blood Bank Dashboard{% endblock %}
+{% block topbar_title %}Blood Bank Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Blood Bank Dashboard</h1>
+    <p>Live overview of requests, stock, and donors.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.record_donation') }}" class="btn btn-primary">+ Donation</a>
+    <a href="{{ url_for('staff.all_requests') }}" class="btn btn-secondary">Manage Requests</a>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card accent">
+    <div class="stat-label">Pending requests</div>
+    <div class="stat-value">{{ pending }}</div>
+    <div class="stat-sub">Awaiting fulfillment</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Urgent pending</div>
+    <div class="stat-value" style="color:var(--red)">{{ urgent }}</div>
+    <div class="stat-sub">Priority queue</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Awaiting verification</div>
+    <div class="stat-value" style="color:#1e40af">{{ fulfilled_waiting }}</div>
+    <div class="stat-sub">Fulfilled, hospital to confirm</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total stock (units)</div>
+    <div class="stat-value">{{ total_units }}</div>
+    <div class="stat-sub">Across all banks</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Registered donors</div>
+    <div class="stat-value">{{ donor_count }}</div>
+    <div class="stat-sub">In system</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Pending requests (latest {{ recent|length }})</span>
+    <a href="{{ url_for('staff.all_requests') }}" class="btn btn-ghost btn-sm">See all</a>
+  </div>
+  <div class="table-wrap">
+    {% if recent %}
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Hospital</th><th>Blood type</th><th>Units</th><th>Date</th><th>Urgent</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for r in recent %}
+        <tr {% if r.isUrgent %}class="urgent-row"{% endif %}>
+          <td style="font-family:monospace;font-size:12px">{{ r.id }}</td>
+          <td>{{ r.hospitalId }}</td>
+          <td><span class="badge badge-red">{{ r.bloodType | replace('_',' ') }}</span></td>
+          <td><strong>{{ r.quantity }}</strong></td>
+          <td>{{ r.date }}</td>
+          <td>{% if r.isUrgent %}<span class="badge badge-red">🚨 Urgent</span>{% else %}<span class="badge badge-gray">Normal</span>{% endif %}</td>
+          <td>
+            <div class="actions">
+              <a href="{{ url_for('staff.handle_fulfill_request', req_id=r.id) }}" class="btn btn-sm btn-success" onclick="return confirm('Fulfil {{ r.id }}?')">Fulfil</a>
+              <a href="{{ url_for('staff.handle_reject_request', req_id=r.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Reject {{ r.id }}?')">Reject</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">✅</div><p>No pending requests — all caught up!</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

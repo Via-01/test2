@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Quick Summary{% endblock %}
+{% block topbar_title %}Hospital — Quick Summary{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Quick Summary</h1>
+    <p>At-a-glance text overview of your hospital's request status.</p>
+  </div>
+  <a href="{{ url_for('hospital.report') }}" class="btn btn-ghost">Full Report →</a>
+</div>
+
+<div class="card" style="max-width:640px">
+  <div class="card-header"><span class="card-title">Request Status — Today</span></div>
+  <div class="card-body" style="font-size:15px;line-height:2.2">
+
+    <p><strong>📋 Total requests submitted:</strong> {{ total }}</p>
+    <p><strong>⏳ Pending:</strong> {{ pending }} request{{ 's' if pending!=1 }} currently awaiting fulfillment by the blood bank.</p>
+    <p><strong>📦 Fulfilled — awaiting your verification:</strong> {{ fulfilled }} request{{ 's' if fulfilled!=1 }}. Please confirm delivery to close the loop.</p>
+    <p><strong>✅ Verified:</strong> {{ verified }} request{{ 's' if verified!=1 }} where delivery has been confirmed.</p>
+    <p><strong>❌ Rejected:</strong> {{ rejected }} request{{ 's' if rejected!=1 }} that could not be fulfilled.</p>
+
+    {% if fulfilled > 0 %}
+    <div class="divider"></div>
+    <p style="color:#1e40af;font-weight:600">
+      ⏳ You have {{ fulfilled }} fulfilled request{{ 's' if fulfilled!=1 }} awaiting your verification.
+      <a href="{{ url_for('hospital.my_requests', status='FULFILLED') }}" style="color:#1d4ed8">Verify now →</a>
+    </p>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

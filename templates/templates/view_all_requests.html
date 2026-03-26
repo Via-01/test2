@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>All Request History</h1>
+    <p>Complete log of every blood request across all statuses.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.view_requests') }}" class="btn btn-ghost">← Pending only</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">{{ requests | length }} total requests</span>
+    <input type="text" id="reqSearch" placeholder="Search…" style="width:200px;padding:7px 12px;font-size:13px;" oninput="filterReqs()">
+  </div>
+  <div class="table-wrap">
+    {% if requests %}
+    <table id="reqTbl">
+      <thead>
+        <tr>
+          <th>Request ID</th>
+          <th>Hospital</th>
+          <th>Blood type</th>
+          <th>Units</th>
+          <th>Date</th>
+          <th>Urgent</th>
+          <th>Status</th>
+          {% if session.user_type == 'blood_bank_staff' %}<th>Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in requests %}
+        {% set status_class = {
+            'PENDING':'badge-yellow',
+            'FULFILLED':'badge-blue',
+            'VERIFIED':'badge-green',
+            'REJECTED':'badge-red',
+            'ACCEPTED':'badge-gray'
+          }.get(r.status, 'badge-gray') %}
+        <tr {% if r.isUrgent == 'Yes' %}class="urgent-row"{% endif %}>
+          <td style="font-family:monospace;font-size:12px;">{{ r.id }}</td>
+          <td>{{ r.hospitalId }}</td>
+          <td><span class="badge badge-red">{{ r.bloodType | replace('_',' ') }}</span></td>
+          <td>{{ r.quantity }}</td>
+          <td>{{ r.date }}</td>
+          <td>{% if r.isUrgent == 'Yes' %}<span class="badge badge-red">Urgent</span>{% else %}<span class="badge badge-gray">Normal</span>{% endif %}</td>
+          <td><span class="badge {{ status_class }}">{{ r.status }}</span></td>
+          {% if session.user_type == 'blood_bank_staff' %}
+          <td>
+            {% if r.status == 'FULFILLED' %}
+            <a href="{{ url_for('staff.handle_verify_fulfillment', req_id=r.id) }}" class="btn btn-sm btn-success"
+               onclick="return confirm('Mark {{ r.id }} as verified?')">Verify</a>
+            {% else %}
+            <span style="color:#bbb;font-size:12px;">—</span>
+            {% endif %}
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">🗂️</div><p>No requests found.</p></div>
+    {% endif %}
+  </div>
+</div>
+<script>
+function filterReqs(){
+  const q=document.getElementById('reqSearch').value.toLowerCase();
+  document.querySelectorAll('#reqTbl tbody tr').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});
+}
+</script>
+{% endblock %}

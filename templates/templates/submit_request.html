@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Submit Blood Request</h1>
+    <p>Create a new request — it will be queued as PENDING for staff review.</p>
+  </div>
+  <div class="actions">
+    <a href="{{ url_for('staff.view_requests') }}" class="btn btn-ghost">← Pending requests</a>
+  </div>
+</div>
+
+<div style="max-width:640px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Request details</span></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('staff.submit_blood_request') }}">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="hospital_id">Hospital unit ID</label>
+            <input type="text" id="hospital_id" name="hospital_id" required placeholder="e.g. HU001">
+          </div>
+          <div class="form-group">
+            <label for="requested_id">Patient / reference ID</label>
+            <input type="text" id="requested_id" name="requested_id" placeholder="PATIENT_N/A">
+          </div>
+          <div class="form-group">
+            <label for="blood_type">Blood type needed</label>
+            <select id="blood_type" name="blood_type" required>
+              <option value="">— Select —</option>
+              {% for bt in blood_types %}
+              <option value="{{ bt }}">{{ bt | replace('_',' ') }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="quantity">Units requested</label>
+            <input type="number" id="quantity" name="quantity" required min="1" placeholder="e.g. 2">
+          </div>
+          <div class="form-group form-full">
+            <div class="checkbox-row">
+              <input type="checkbox" id="is_urgent" name="is_urgent">
+              <label for="is_urgent">Mark as urgent (priority fulfillment)</label>
+            </div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Submit Request</button>
+          <a href="{{ url_for('staff.view_requests') }}" class="btn btn-ghost">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
